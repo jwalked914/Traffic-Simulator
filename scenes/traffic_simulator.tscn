@@ -8,6 +8,7 @@
 [node name="RoadGaph" type="Node2D" parent="." unique_id=1714159589]
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1600570113]
+visible = false
 script = ExtResource("1_jcp8h")
 
 [node name="UI" type="CanvasGroup" parent="." unique_id=1037906133]
