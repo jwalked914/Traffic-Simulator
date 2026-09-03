@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://d1vfabc102us6"]
+
+[ext_resource type="Script" uid="uid://wexkv2xqmrue" path="res://scenes/CameraController.cs" id="1_jcp8h"]
+[ext_resource type="Texture2D" uid="uid://d2112mwpbtrdo" path="res://assets/chess-board-square-abstract-background-dark-grey_980832-4819.png" id="2_kr56e"]
+
+[node name="TrafficSimulator" type="Node2D" unique_id=1027597209]
+
+[node name="RoadGaph" type="Node2D" parent="." unique_id=1714159589]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1600570113]
+script = ExtResource("1_jcp8h")
+
+[node name="UI" type="CanvasGroup" parent="." unique_id=1037906133]
+
+[node name="Placeholder Background" type="TextureRect" parent="." unique_id=639797288]
+offset_right = 269.0
+offset_bottom = 259.0
+texture = ExtResource("2_kr56e")
