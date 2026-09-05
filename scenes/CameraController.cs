@@ -30,7 +30,7 @@ public partial class CameraController : Camera2D
 		// move the camera based on input type and delta time
 		_targetPosition += movement * MoveSpeed * speedMultiplier * (float)delta;
 		
-		// Smoothen movement with linear interpretation
+		// Smoothen movement with linear interpolation
 		float t = 1f - Mathf.Exp(-SmoothSpeed * (float)delta);
 		Position = Position.Lerp(_targetPosition, t);
 	}
@@ -49,7 +49,10 @@ public partial class CameraController : Camera2D
 		// move the camera based on mouse movement
 		if (@event is InputEventMouseMotion mouseMotion && _dragging)
 		{
-			Position -= mouseMotion.Relative / Zoom;
+			Vector2 draggingMovement = mouseMotion.Relative / Zoom;
+			
+			Position -= draggingMovement;
+			_targetPosition -= draggingMovement;
 		}
 	}
 }
