@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://d1vfabc102us6"]
+
+[ext_resource type="Script" uid="uid://1nc08vgalxey" path="res://scripts/grid/GridView.cs" id="1_65n4o"]
+[ext_resource type="PackedScene" uid="uid://cfwiul57nkp24" path="res://scenes/roads/road_graph.tscn" id="1_hvb5e"]
+[ext_resource type="Script" uid="uid://wexkv2xqmrue" path="res://scripts/camera/CameraController.cs" id="1_jcp8h"]
+[ext_resource type="Texture2D" uid="uid://d2112mwpbtrdo" path="res://assets/chess-board-square-abstract-background-dark-grey_980832-4819.png" id="2_kr56e"]
+
+[node name="TrafficSimulator" type="Node2D" unique_id=1027597209]
+
+[node name="World" type="Node2D" parent="." unique_id=1169964204]
+
+[node name="GridView" type="Node2D" parent="World" unique_id=966540054]
+script = ExtResource("1_65n4o")
+
+[node name="RoadGraph" parent="World" unique_id=1327655217 instance=ExtResource("1_hvb5e")]
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=1600570113]
+visible = false
+script = ExtResource("1_jcp8h")
+
+[node name="UI" type="CanvasLayer" parent="." unique_id=765405292]
+
+[node name="Placeholder Background" type="TextureRect" parent="." unique_id=639797288]
+visible = false
+offset_right = 269.0
+offset_bottom = 259.0
+texture = ExtResource("2_kr56e")
