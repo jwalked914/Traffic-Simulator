@@ -4,11 +4,12 @@ public partial class GridView : Node2D
 {
     [ExportGroup("References")]
     [Export] public NodePath RoadGraphPath { get; set; } = new NodePath("../RoadGraph");
+
     [ExportGroup("Grid")]
     [Export] public float GridLineWidth { get; set; } = 1.0f;
     [Export] public float HoverInset { get; set; } = 6.0f;
     [Export] public float HoverOutlineWidth { get; set; } = 2.0f;
-    
+
     // temporary colors
     // TODO: potentially replace this with a grass theme in the future
     [ExportGroup("Dark Mode Colors")]
@@ -116,6 +117,11 @@ public partial class GridView : Node2D
     // draws a hover indicator on the hovered cell
     private void DrawHoveredCell()
     {
+        if (_roadGraph.IsDeleteSelecting)
+        {
+            return;
+        }
+
         Rect2 cellRect = _roadGraph.GetCellLocalRect(_hoveredCell);
 
         float inset = ScreenPixelsToLocal(HoverInset);
@@ -126,7 +132,6 @@ public partial class GridView : Node2D
         Rect2 hoverRect = cellRect.Grow(-inset);
 
         DrawRect(hoverRect, HoverFillColor);
-
         DrawRect(hoverRect, HoverOutlineColor, false, outlineWidth, true);
     }
 
@@ -149,7 +154,6 @@ public partial class GridView : Node2D
     private Rect2 GetVisibleLocalBounds()
     {
         Rect2 viewportRect = GetViewport().GetVisibleRect();
-
         Transform2D viewportToLocal = GetGlobalTransformWithCanvas().AffineInverse();
 
         Vector2[] corners =
