@@ -1,6 +1,108 @@
 [gd_scene format=3 uid="uid://irsk2p14klg7"]
 
 [ext_resource type="Script" uid="uid://kvytgqwackmd" path="res://scripts/MainMenu.cs" id="1_yqorp"]
+[ext_resource type="Script" uid="uid://bqhho1hpaqegf" path="res://scripts/TrafficBackground.cs" id="2_0ykhv"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_yqorp"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.22595462, 0.22849122, 0.23544618, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0012739137, 0.0011764521, 0.0011358396, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+corner_detail = 5
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_a1v3f"]
+bg_color = Color(0.28627452, 0.26666668, 0.2784314, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0063287267, 0.005420986, 0.005521377, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_0ykhv"]
+bg_color = Color(0.22745098, 0.22745098, 0.23529412, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2wh52"]
+bg_color = Color(0.28627452, 0.26666668, 0.2784314, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0018804211, 0.0027390588, 0.0037898435, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ow34m"]
+bg_color = Color(0.22745098, 0.22745098, 0.23529412, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.0036215528, 0.0035182666, 0.003246776, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_l72w3"]
+bg_color = Color(0.2849058, 0.26709953, 0.27744463, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0, 0, 0, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_826wr"]
+bg_color = Color(0.2072829, 0.09700119, 0.08918796, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.028676346, 0.0013628909, 0.0018751369, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ucygd"]
+bg_color = Color(0.3658722, 0.17444006, 0.1559715, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.005892709, 0.008581852, 0.011872523, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
 
 [node name="MainMenu" type="Control" unique_id=2115391267]
 layout_mode = 3
@@ -18,7 +120,16 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.017653136, 0.0764659, 0.057054743, 1)
+color = Color(0.05882353, 0.07058824, 0.08627451, 1)
+
+[node name="TrafficBackground" type="Control" parent="." unique_id=786735216]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2_0ykhv")
 
 [node name="CenterContainer" type="CenterContainer" parent="." unique_id=1804977060]
 layout_mode = 1
@@ -30,26 +141,54 @@ grow_vertical = 2
 
 [node name="MenuContainer" type="VBoxContainer" parent="CenterContainer" unique_id=1383464365]
 layout_mode = 2
-theme_override_constants/separation = 10
+theme_override_constants/separation = 12
 
 [node name="Title" type="Label" parent="CenterContainer/MenuContainer" unique_id=988671732]
 layout_mode = 2
-theme_override_font_sizes/font_size = 48
+theme_override_colors/font_color = Color(0.9098039, 0.92941177, 0.9490196, 1)
+theme_override_font_sizes/font_size = 64
 text = "TRAFFIC DESIGN SIMULATOR"
 horizontal_alignment = 1
 
-[node name="NewDesignButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=902077970]
+[node name="Subtitle" type="Label" parent="CenterContainer/MenuContainer" unique_id=1045827977]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.5389412, 0.55087453, 0.5826623, 1)
+theme_override_font_sizes/font_size = 36
+text = "DESIGN-SIMULATE-IMPROVE"
+horizontal_alignment = 1
+
+[node name="NewDesignButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=902077970]
+custom_minimum_size = Vector2(360, 56)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_yqorp")
+theme_override_styles/hover = SubResource("StyleBoxFlat_a1v3f")
 text = "NEW DESIGN"
 
 [node name="LoadDesignButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=1233069145]
+custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_0ykhv")
+theme_override_styles/hover = SubResource("StyleBoxFlat_2wh52")
 text = "LOAD DESIGN"
 
 [node name="SettingsButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=1894742454]
+custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_ow34m")
+theme_override_styles/hover = SubResource("StyleBoxFlat_l72w3")
 text = "SETTINGS"
 
 [node name="ExitButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=697248772]
+custom_minimum_size = Vector2(360, 56)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+theme_override_font_sizes/font_size = 18
+theme_override_styles/normal = SubResource("StyleBoxFlat_826wr")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ucygd")
 text = "EXIT"
