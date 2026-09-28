@@ -1,6 +1,4 @@
 using Godot;
-using System;
-using System.Runtime.CompilerServices;
 
 public enum ToolType
 {
@@ -12,8 +10,6 @@ public enum ToolType
 public partial class ToolBox : Control
 {
 	[Signal] public delegate void ToolSelectedEventHandler(int tool);
-
-	public ToolType CurrentTool { get; private set; } = ToolType.None;
 
 	private Button roadButton;
 	private Button junctionButton;
@@ -33,10 +29,7 @@ public partial class ToolBox : Control
 	private void OnToolToggled(bool pressed, ToolType tool)
 	{
 		CurrentTool = pressed ? tool : ToolType.None;
-
-		GD.Print($"Tool selected: {CurrentTool}");
 		EmitSignal(SignalName.ToolSelected, (int)CurrentTool);
-		// *** OBJECT PLACEMENT LOGIC GOES HERE ***
 	}
 }
 
