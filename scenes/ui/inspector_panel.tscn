@@ -1,0 +1,137 @@
+[gd_scene format=3 uid="uid://pbvo7gd5ij24"]
+
+[ext_resource type="Script" uid="uid://bavbg0r00w5np" path="res://scripts/ui/InspectorPanel.cs" id="1_sta7u"]
+[ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="2_ytbsa"]
+[ext_resource type="Texture2D" uid="uid://uja4n30o7ggk" path="res://icon.svg" id="3_d0c32"]
+
+[node name="InspectorPanel" type="Control" unique_id=1062938724]
+layout_mode = 3
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+grow_horizontal = 0
+grow_vertical = 2
+script = ExtResource("1_sta7u")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=987527619]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -183.0
+offset_top = -209.0
+offset_right = -8.0
+offset_bottom = 219.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = ExtResource("2_ytbsa")
+
+[node name="InspectorContent" type="VBoxContainer" parent="PanelContainer" unique_id=1725770395]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="HeaderRow" type="HBoxContainer" parent="PanelContainer/InspectorContent" unique_id=788418587]
+layout_mode = 2
+
+[node name="SelectedObjectLabel" type="Label" parent="PanelContainer/InspectorContent/HeaderRow" unique_id=378736222]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "Selected: Object"
+visible_characters_behavior = 1
+
+[node name="CloseButton" type="Button" parent="PanelContainer/InspectorContent/HeaderRow" unique_id=1158312922]
+layout_mode = 2
+text = "X"
+
+[node name="TypeIcon" type="TextureRect" parent="PanelContainer/InspectorContent" unique_id=1958689795]
+layout_mode = 2
+texture = ExtResource("3_d0c32")
+
+[node name="TypeLabel" type="Label" parent="PanelContainer/InspectorContent" unique_id=1660233917]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "\"Object Name\""
+
+[node name="TypeSubtitle" type="Label" parent="PanelContainer/InspectorContent" unique_id=613004912]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "\"Object Subtitle\""
+
+[node name="HSeparator" type="HSeparator" parent="PanelContainer/InspectorContent" unique_id=497573071]
+layout_mode = 2
+
+[node name="LanesField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=1794088550]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="LaneLabel" type="Label" parent="PanelContainer/InspectorContent/LanesField" unique_id=969467451]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "Lanes per road"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/InspectorContent/LanesField" unique_id=647230840]
+layout_mode = 2
+
+[node name="DecreaseLaneButton" type="Button" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=1978575751]
+layout_mode = 2
+size_flags_vertical = 3
+text = "-"
+
+[node name="Label" type="Label" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=868506703]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "4"
+horizontal_alignment = 1
+
+[node name="IncreaseLaneButton" type="Button" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=1391634370]
+layout_mode = 2
+size_flags_vertical = 3
+text = "+"
+
+[node name="SpeedField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=412827036]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="PanelContainer/InspectorContent/SpeedField" unique_id=723380748]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "Speed limit (mph)"
+
+[node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/InspectorContent/SpeedField" unique_id=595678609]
+layout_mode = 2
+
+[node name="Button" type="Button" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=1011343418]
+layout_mode = 2
+text = "-"
+
+[node name="Label" type="Label" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=1349989846]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "50"
+horizontal_alignment = 1
+
+[node name="Button2" type="Button" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=813912018]
+layout_mode = 2
+text = "+"
+
+[node name="SignalField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=597416292]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SignalLabel" type="Label" parent="PanelContainer/InspectorContent/SignalField" unique_id=1576364202]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+text = "Signal Type:"
+
+[node name="OptionButton" type="OptionButton" parent="PanelContainer/InspectorContent/SignalField" unique_id=1833280398]
+layout_mode = 2
+selected = 0
+item_count = 1
+popup/item_0/id = 0
