@@ -26,10 +26,11 @@ public partial class ToolBox : Control
 		locationButton.Toggled += (pressed) => OnToolToggled(pressed, ToolType.Location);
 	}
 
+	// tells selected tool to UIRoot, or None when a button is unpressed
 	private void OnToolToggled(bool pressed, ToolType tool)
 	{
-		CurrentTool = pressed ? tool : ToolType.None;
-		EmitSignal(SignalName.ToolSelected, (int)CurrentTool);
+		ToolType selected = pressed ? tool : ToolType.None;
+		EmitSignal(SignalName.ToolSelected, (int)selected);
 	}
 }
 

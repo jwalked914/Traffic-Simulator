@@ -30,6 +30,7 @@ public partial class InspectorPanel : Control
 				Visible = true;
 				lanesField.Visible = true;
 				speedField.Visible = true;
+				signalField.Visible = false;
 				break;
 
 			case ToolType.Junction:

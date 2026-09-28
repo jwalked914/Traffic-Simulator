@@ -25,7 +25,7 @@ public partial class UIRoot : CanvasLayer
 		simMenuButton = GetNode<MenuButton>("SimMenuButton");
 		simMenuButton.GetPopup().IdPressed += OnSimMenuItemPressed;
 
-		toolBox.ToolSelected+= OnToolSelected;
+		toolBox.ToolSelected += OnToolSelected;
 	}
 
 
@@ -45,7 +45,7 @@ public partial class UIRoot : CanvasLayer
 				break;
 
 			case 1: // settings?
-				break;	
+				break;
 
 			case 2:	 // close app
 				GetTree().Quit();
