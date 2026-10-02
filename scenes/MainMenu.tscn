@@ -158,37 +158,37 @@ text = "DESIGN-SIMULATE-IMPROVE"
 horizontal_alignment = 1
 
 [node name="NewDesignButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=902077970]
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(300, 80)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_yqorp")
 theme_override_styles/hover = SubResource("StyleBoxFlat_a1v3f")
 text = "NEW DESIGN"
 
 [node name="LoadDesignButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=1233069145]
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(360, 80)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_0ykhv")
 theme_override_styles/hover = SubResource("StyleBoxFlat_2wh52")
 text = "LOAD DESIGN"
 
 [node name="SettingsButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=1894742454]
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(360, 80)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_ow34m")
 theme_override_styles/hover = SubResource("StyleBoxFlat_l72w3")
 text = "SETTINGS"
 
 [node name="ExitButton" type="Button" parent="CenterContainer/MenuContainer" unique_id=697248772]
-custom_minimum_size = Vector2(360, 56)
+custom_minimum_size = Vector2(360, 80)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 24
 theme_override_styles/normal = SubResource("StyleBoxFlat_826wr")
 theme_override_styles/hover = SubResource("StyleBoxFlat_ucygd")
 text = "EXIT"
