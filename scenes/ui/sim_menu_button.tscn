@@ -1,0 +1,31 @@
+[gd_scene format=3 uid="uid://cx0emgkowrsro"]
+
+[ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="1_cmxfp"]
+
+[sub_resource type="Theme" id="Theme_jyxc4"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jyxc4"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ptuai"]
+bg_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+
+[node name="SimMenuButton" type="MenuButton" unique_id=1233140219]
+anchors_preset = -1
+anchor_right = 0.065104164
+anchor_bottom = 0.11574074
+theme = SubResource("Theme_jyxc4")
+theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = ExtResource("1_cmxfp")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_jyxc4")
+theme_override_styles/hover = SubResource("StyleBoxFlat_ptuai")
+text = "≡"
+flat = false
+item_count = 3
+popup/item_0/text = "Main Menu"
+popup/item_0/id = 0
+popup/item_1/text = "Settings"
+popup/item_1/id = 1
+popup/item_1/disabled = true
+popup/item_2/text = "Quit"
+popup/item_2/id = 2
