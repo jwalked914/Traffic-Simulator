@@ -17,4 +17,14 @@ public partial class LaneGraph : Node
 
 	public IEnumerable<LaneConnection> GetOutgoing(LaneID lane) =>
 		_outgoing.TryGetValue(lane, out var list) ? list : Enumerable.Empty<LaneConnection>();
+
+	public void RemoveLane(LaneID lane)
+	{
+		_outgoing.Remove(lane);
+
+		foreach (List<LaneConnection> connections in _outgoing.Values)
+		{
+			connections.RemoveAll(connection => connection.To == lane);
+		}
+	}
 }

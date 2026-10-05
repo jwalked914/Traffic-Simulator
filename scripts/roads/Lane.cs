@@ -1,6 +1,6 @@
 using Godot;
 
-public struct Lane
+public class Lane
 {
 	public LaneID Id;
 	public int Index;
@@ -29,3 +29,15 @@ public readonly struct LaneID
 
 // in case we want to model different lane types later: parking, shoulder, bike lanes, etc.
 public enum LaneType {Driving}
+
+public readonly struct LaneConnection
+{
+	public readonly LaneID From;
+	public readonly LaneID To;
+
+	public LaneConnection(LaneID from, LaneID to)
+	{
+		From = from;
+		To = to;
+	}
+}

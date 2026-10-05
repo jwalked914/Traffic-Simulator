@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-public class RoadNode
+public class RoadJunction
 {
 	// complex junctions may be larger than just one cell.
 	// thus, we need a way to represent and allocate multiple cells
@@ -9,14 +9,14 @@ public class RoadNode
 	public Vector2I AnchorCell; // top-left cell of junction
 	public Vector2I FootprintSize; // # of cells; (1, 1) by default
 	
-	public List<LaneID> Lanes = new();
+	public List<Lane> Lanes = new();
 	
-	public RoadNode(Vector2I anchorCell, Vector2I? footprintSize = null)
+	public RoadJunction(Vector2I anchorCell, Vector2I? footprintSize = null)
 	{
 		AnchorCell = anchorCell;
 		FootprintSize = footprintSize ?? new Vector2I(1, 1);
 	}
 	
-	public Rect2 GetLocalRect(RoadGraph roadGraph) =>
-		roadGraph.GetMultiCellLocalRect(AnchorCell, FootprintSize);
+	public Rect2 GetLocalRect(Vector2I cellSize) =>
+		GridMath.GetMultiCellRect(AnchorCell, FootprintSize, cellSize.X);
 }

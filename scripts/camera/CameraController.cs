@@ -93,7 +93,7 @@ public partial class CameraController : Camera2D
 
 			// zoom toward the mouse cursor with scroll wheel
 			if (mouseButton.Pressed && (mouseButton.ButtonIndex == MouseButton.WheelUp ||
-			    mouseButton.ButtonIndex == MouseButton.WheelDown))
+				mouseButton.ButtonIndex == MouseButton.WheelDown))
 			{
 				float oldZoom = Zoom.X;
 				float zoomMultiplier = mouseButton.ButtonIndex == MouseButton.WheelUp ? ZoomFactor : 1.0f / ZoomFactor;
