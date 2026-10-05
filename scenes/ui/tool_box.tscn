@@ -1,0 +1,56 @@
+[gd_scene format=3 uid="uid://c87jephg81ukd"]
+
+[ext_resource type="Script" uid="uid://bobmihu7wpd4u" path="res://scripts/ui/ToolBox.cs" id="1_s8ob5"]
+[ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="2_jhmct"]
+[ext_resource type="ButtonGroup" uid="uid://4n2l67xgijr2" path="res://toolbox_button_group.tres" id="3_b7b3u"]
+
+[node name="ToolBox" type="Control" unique_id=1891143928]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_top = -94.0
+grow_horizontal = 2
+grow_vertical = 0
+offset_transform_scale = Vector2(0, 0)
+script = ExtResource("1_s8ob5")
+
+[node name="PanelContainer" type="PanelContainer" parent="." unique_id=181328938]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -350.0
+offset_top = -76.0
+offset_right = 350.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/panel = ExtResource("2_jhmct")
+
+[node name="ToolBoxButtons" type="HBoxContainer" parent="PanelContainer" unique_id=759272563]
+layout_mode = 2
+
+[node name="RoadButton" type="Button" parent="PanelContainer/ToolBoxButtons" unique_id=1007805354]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_group = ExtResource("3_b7b3u")
+text = "ROAD"
+
+[node name="JunctionButton" type="Button" parent="PanelContainer/ToolBoxButtons" unique_id=2112697437]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_group = ExtResource("3_b7b3u")
+text = "JUNCTION"
+
+[node name="LocationButton" type="Button" parent="PanelContainer/ToolBoxButtons" unique_id=1606031145]
+layout_mode = 2
+size_flags_horizontal = 3
+toggle_mode = true
+button_group = ExtResource("3_b7b3u")
+text = "LOCATION"

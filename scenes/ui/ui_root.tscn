@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://jph0f7dwakyp"]
+
+[ext_resource type="Script" uid="uid://usy52fpixdxn" path="res://scripts/ui/UIRoot.cs" id="1_f5wd2"]
+[ext_resource type="PackedScene" uid="uid://c87jephg81ukd" path="res://scenes/ui/tool_box.tscn" id="1_kafpn"]
+[ext_resource type="PackedScene" uid="uid://pbvo7gd5ij24" path="res://scenes/ui/inspector_panel.tscn" id="2_f5wd2"]
+[ext_resource type="PackedScene" uid="uid://cx0emgkowrsro" path="res://scenes/ui/sim_menu_button.tscn" id="4_eohe1"]
+[ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="5_t1f3t"]
+
+[node name="UI" type="CanvasLayer" unique_id=1696535506]
+script = ExtResource("1_f5wd2")
+
+[node name="ToolBox" parent="." unique_id=1891143928 instance=ExtResource("1_kafpn")]
+
+[node name="InspectorPanel" parent="." unique_id=1062938724 instance=ExtResource("2_f5wd2")]
+
+[node name="SimMenuButton" parent="." unique_id=1233140219 instance=ExtResource("4_eohe1")]
+theme = null
+theme_override_styles/pressed = ExtResource("5_t1f3t")
