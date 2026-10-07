@@ -5,6 +5,7 @@
 [ext_resource type="Script" uid="uid://wexkv2xqmrue" path="res://scripts/camera/CameraController.cs" id="1_jcp8h"]
 [ext_resource type="Texture2D" uid="uid://d2112mwpbtrdo" path="res://assets/chess-board-square-abstract-background-dark-grey_980832-4819.png" id="2_kr56e"]
 [ext_resource type="Script" uid="uid://4n2ucw1ie7ry" path="res://scripts/roads/LaneGraph.cs" id="4_jqfeq"]
+[ext_resource type="PackedScene" uid="uid://jph0f7dwakyp" path="res://scenes/ui/ui_root.tscn" id="5_jqfeq"]
 
 [node name="TrafficSimulator" type="Node2D" unique_id=1027597209]
 
@@ -22,7 +23,7 @@ script = ExtResource("4_jqfeq")
 visible = false
 script = ExtResource("1_jcp8h")
 
-[node name="UI" type="CanvasLayer" parent="." unique_id=765405292]
+[node name="UI" parent="." unique_id=1696535506 instance=ExtResource("5_jqfeq")]
 
 [node name="Placeholder Background" type="TextureRect" parent="." unique_id=639797288]
 visible = false
