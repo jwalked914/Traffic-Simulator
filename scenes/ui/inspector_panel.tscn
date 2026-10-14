@@ -4,6 +4,9 @@
 [ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="2_ytbsa"]
 [ext_resource type="Texture2D" uid="uid://uja4n30o7ggk" path="res://icon.svg" id="3_d0c32"]
 
+[sub_resource type="Theme" id="Theme_building_fields"]
+Label/colors/font_color = Color(0.22, 0.24, 0.27, 1)
+
 [node name="InspectorPanel" type="Control" unique_id=1062938724]
 layout_mode = 3
 anchors_preset = 6
@@ -20,17 +23,17 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -183.0
-offset_top = -209.0
+offset_left = -320.0
+offset_top = -320.0
 offset_right = -8.0
-offset_bottom = 219.0
+offset_bottom = 320.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = ExtResource("2_ytbsa")
 
 [node name="InspectorContent" type="VBoxContainer" parent="PanelContainer" unique_id=1725770395]
 layout_mode = 2
-size_flags_horizontal = 4
+size_flags_horizontal = 3
 
 [node name="HeaderRow" type="HBoxContainer" parent="PanelContainer/InspectorContent" unique_id=788418587]
 layout_mode = 2
@@ -135,3 +138,65 @@ layout_mode = 2
 selected = 0
 item_count = 1
 popup/item_0/id = 0
+
+[node name="StructureFields" type="VBoxContainer" parent="PanelContainer/InspectorContent"]
+visible = false
+layout_mode = 2
+theme = SubResource("Theme_building_fields")
+
+[node name="BuildingTypeLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Building type"
+
+[node name="BuildingType" type="OptionButton" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+
+[node name="WidthLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Width (cells)"
+
+[node name="Width" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+min_value = 1.0
+max_value = 32.0
+value = 3.0
+
+[node name="HeightLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Height (cells)"
+
+[node name="Height" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+min_value = 2.0
+max_value = 32.0
+value = 3.0
+
+[node name="ParkingRowsLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Parking depth (cells)"
+
+[node name="ParkingRows" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+min_value = 1.0
+max_value = 2.0
+value = 1.0
+
+[node name="Details" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+autowrap_mode = 3
+
+[node name="ApplyButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Apply changes"
+
+[node name="NewButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Place another building"
+
+[node name="DeleteButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+text = "Delete building"
+
+[node name="Message" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+autowrap_mode = 3
