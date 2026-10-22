@@ -4,7 +4,17 @@
 [ext_resource type="PackedScene" uid="uid://c87jephg81ukd" path="res://scenes/ui/tool_box.tscn" id="1_kafpn"]
 [ext_resource type="PackedScene" uid="uid://pbvo7gd5ij24" path="res://scenes/ui/inspector_panel.tscn" id="2_f5wd2"]
 [ext_resource type="PackedScene" uid="uid://cx0emgkowrsro" path="res://scenes/ui/sim_menu_button.tscn" id="4_eohe1"]
+[ext_resource type="Script" uid="uid://b1nybescy3jy2" path="res://scripts/ui/SimManagerPanel.cs" id="4_t1f3t"]
+[ext_resource type="StyleBox" uid="uid://thjcuokvvjsd" path="res://toolbox_button_normal.tres" id="5_7o2ne"]
+[ext_resource type="Texture2D" uid="uid://c31kgic6ww2gc" path="res://assets/save_white.svg" id="5_bn0b7"]
 [ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="5_t1f3t"]
+[ext_resource type="StyleBox" uid="uid://bo77mf61ylgh6" path="res://toolbox_button_pressed.tres" id="6_gluwf"]
+[ext_resource type="StyleBox" uid="uid://8eh80hf2lq4r" path="res://toolbox_button_hover.tres" id="7_ah7cs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jlrf6"]
+bg_color = Color(0.90982777, 0, 0.09985284, 0.3)
+border_color = Color(0, 0, 0, 1)
+border_blend = true
 
 [node name="UI" type="CanvasLayer" unique_id=1696535506]
 script = ExtResource("1_f5wd2")
@@ -13,6 +23,53 @@ script = ExtResource("1_f5wd2")
 
 [node name="InspectorPanel" parent="." unique_id=1062938724 instance=ExtResource("2_f5wd2")]
 
+[node name="SimManagerPanel" type="Control" parent="." unique_id=1657399947]
+layout_mode = 3
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+script = ExtResource("4_t1f3t")
+
+[node name="PanelContainer" type="PanelContainer" parent="SimManagerPanel" unique_id=1675676318]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -125.0
+offset_right = 125.0
+offset_bottom = 95.0
+grow_horizontal = 2
+theme_override_styles/panel = ExtResource("5_t1f3t")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="SimManagerPanel/PanelContainer" unique_id=869663833]
+layout_mode = 2
+
+[node name="StartSimButton" type="Button" parent="SimManagerPanel/PanelContainer/HBoxContainer" unique_id=557510278]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5_7o2ne")
+theme_override_styles/pressed = ExtResource("6_gluwf")
+theme_override_styles/hover = ExtResource("7_ah7cs")
+
+[node name="SaveSimButton" type="Button" parent="SimManagerPanel/PanelContainer/HBoxContainer" unique_id=878707291]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5_7o2ne")
+theme_override_styles/pressed = ExtResource("6_gluwf")
+theme_override_styles/hover = ExtResource("7_ah7cs")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_jlrf6")
+icon = ExtResource("5_bn0b7")
+
+[node name="SimTimeLabel" type="Label" parent="SimManagerPanel/PanelContainer/HBoxContainer" unique_id=1300547969]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/normal = ExtResource("5_7o2ne")
+
 [node name="SimMenuButton" parent="." unique_id=1233140219 instance=ExtResource("4_eohe1")]
-theme = null
+offset_right = -29.999992
+offset_bottom = -30.0
 theme_override_styles/pressed = ExtResource("5_t1f3t")

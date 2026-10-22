@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bavbg0r00w5np" path="res://scripts/ui/InspectorPanel.cs" id="1_sta7u"]
 [ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="2_ytbsa"]
-[ext_resource type="Texture2D" uid="uid://uja4n30o7ggk" path="res://icon.svg" id="3_d0c32"]
+[ext_resource type="Texture2D" uid="uid://d00id1jvbl8vf" path="res://cs499-ROAD.png" id="3_sta7u"]
 
 [sub_resource type="Theme" id="Theme_building_fields"]
 Label/colors/font_color = Color(0.22, 0.24, 0.27, 1)
@@ -19,15 +19,17 @@ grow_vertical = 2
 script = ExtResource("1_sta7u")
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=987527619]
+custom_minimum_size = Vector2(200, 0)
 layout_mode = 1
-anchors_preset = 15
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
 anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -320.0
-offset_top = -320.0
-offset_right = -8.0
-offset_bottom = 320.0
-grow_horizontal = 2
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -214.0
+offset_bottom = 214.0
+grow_horizontal = 0
 grow_vertical = 2
 theme_override_styles/panel = ExtResource("2_ytbsa")
 
@@ -41,7 +43,7 @@ layout_mode = 2
 [node name="SelectedObjectLabel" type="Label" parent="PanelContainer/InspectorContent/HeaderRow" unique_id=378736222]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Selected: Object"
 visible_characters_behavior = 1
 
@@ -51,16 +53,17 @@ text = "X"
 
 [node name="TypeIcon" type="TextureRect" parent="PanelContainer/InspectorContent" unique_id=1958689795]
 layout_mode = 2
-texture = ExtResource("3_d0c32")
+texture = ExtResource("3_sta7u")
+expand_mode = 5
 
 [node name="TypeLabel" type="Label" parent="PanelContainer/InspectorContent" unique_id=1660233917]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "\"Object Name\""
 
 [node name="TypeSubtitle" type="Label" parent="PanelContainer/InspectorContent" unique_id=613004912]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "\"Object Subtitle\""
 
 [node name="HSeparator" type="HSeparator" parent="PanelContainer/InspectorContent" unique_id=497573071]
@@ -73,8 +76,8 @@ size_flags_vertical = 3
 [node name="LaneLabel" type="Label" parent="PanelContainer/InspectorContent/LanesField" unique_id=969467451]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
-text = "Lanes per road"
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+text = "Lanes Per Direction"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/InspectorContent/LanesField" unique_id=647230840]
 layout_mode = 2
@@ -82,46 +85,53 @@ layout_mode = 2
 [node name="DecreaseLaneButton" type="Button" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=1978575751]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "-"
 
-[node name="Label" type="Label" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=868506703]
+[node name="LaneValue" type="Label" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=279520836]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
-text = "4"
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+text = "1"
 horizontal_alignment = 1
 
 [node name="IncreaseLaneButton" type="Button" parent="PanelContainer/InspectorContent/LanesField/HBoxContainer" unique_id=1391634370]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "+"
 
 [node name="SpeedField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=412827036]
 layout_mode = 2
 size_flags_vertical = 3
 
+[node name="HSeparator2" type="HSeparator" parent="PanelContainer/InspectorContent/SpeedField" unique_id=1980681930]
+layout_mode = 2
+
 [node name="Label" type="Label" parent="PanelContainer/InspectorContent/SpeedField" unique_id=723380748]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Speed limit (mph)"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="PanelContainer/InspectorContent/SpeedField" unique_id=595678609]
 layout_mode = 2
 
-[node name="Button" type="Button" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=1011343418]
+[node name="DecreaseSpeedButton" type="Button" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=1011343418]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "-"
 
-[node name="Label" type="Label" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=1349989846]
+[node name="SpeedValue" type="Label" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=1349989846]
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "50"
 horizontal_alignment = 1
 
-[node name="Button2" type="Button" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=813912018]
+[node name="IncreaseSpeedButton" type="Button" parent="PanelContainer/InspectorContent/SpeedField/HBoxContainer" unique_id=813912018]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "+"
 
 [node name="SignalField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=597416292]
@@ -130,73 +140,80 @@ size_flags_vertical = 3
 
 [node name="SignalLabel" type="Label" parent="PanelContainer/InspectorContent/SignalField" unique_id=1576364202]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Signal Type:"
 
 [node name="OptionButton" type="OptionButton" parent="PanelContainer/InspectorContent/SignalField" unique_id=1833280398]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 selected = 0
 item_count = 1
 popup/item_0/id = 0
 
-[node name="StructureFields" type="VBoxContainer" parent="PanelContainer/InspectorContent"]
+[node name="StructureFields" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=1024039180]
 visible = false
 layout_mode = 2
 theme = SubResource("Theme_building_fields")
 
-[node name="BuildingTypeLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="BuildingTypeLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1025721384]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Building type"
 
-[node name="BuildingType" type="OptionButton" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="BuildingType" type="OptionButton" parent="PanelContainer/InspectorContent/StructureFields" unique_id=701731842]
 layout_mode = 2
 
-[node name="WidthLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="WidthLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1119749516]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Width (cells)"
 
-[node name="Width" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="Width" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1011243193]
 layout_mode = 2
 min_value = 1.0
 max_value = 32.0
 value = 3.0
 
-[node name="HeightLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="HeightLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields" unique_id=2096772146]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Height (cells)"
 
-[node name="Height" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="Height" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields" unique_id=607012240]
 layout_mode = 2
 min_value = 2.0
 max_value = 32.0
 value = 3.0
 
-[node name="ParkingRowsLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="ParkingRowsLabel" type="Label" parent="PanelContainer/InspectorContent/StructureFields" unique_id=544262880]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Parking depth (cells)"
 
-[node name="ParkingRows" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="ParkingRows" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1945239270]
 layout_mode = 2
 min_value = 1.0
 max_value = 2.0
 value = 1.0
 
-[node name="Details" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="Details" type="Label" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1003305459]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 autowrap_mode = 3
 
-[node name="ApplyButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="ApplyButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields" unique_id=260626594]
 layout_mode = 2
 text = "Apply changes"
 
-[node name="NewButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="NewButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields" unique_id=347044196]
 layout_mode = 2
 text = "Place another building"
 
-[node name="DeleteButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="DeleteButton" type="Button" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1066427545]
 layout_mode = 2
 text = "Delete building"
 
-[node name="Message" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]
+[node name="Message" type="Label" parent="PanelContainer/InspectorContent/StructureFields" unique_id=1655479889]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 autowrap_mode = 3
