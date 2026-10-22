@@ -18,13 +18,15 @@ public class Lane
 
 public readonly struct LaneID
 {
-	public readonly int Value;
-	public LaneID(int value) => Value = value;
+	public readonly ulong Value;
+	public LaneID(ulong value) => Value = value;
 
-	public override bool Equals(object obj) => obj is LaneID other && Value == other.Value;
+	public bool Equals(LaneID other) => Value == other.Value;
+	public override bool Equals(object obj) => obj is LaneID other && Equals(other);
 	public override int GetHashCode() => Value.GetHashCode();
 	public static bool operator ==(LaneID a, LaneID b) => a.Value == b.Value;
 	public static bool operator !=(LaneID a, LaneID b) => !(a == b);
+	public override string ToString() => Value.ToString("X16");
 }
 
 // in case we want to model different lane types later: parking, shoulder, bike lanes, etc.

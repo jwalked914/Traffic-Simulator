@@ -20,3 +20,12 @@ public class RoadJunction
 	public Rect2 GetLocalRect(Vector2I cellSize) =>
 		GridMath.GetMultiCellRect(AnchorCell, FootprintSize, cellSize.X);
 }
+
+public class JunctionLane
+{
+	public LaneID Id;
+	public LaneType Type;
+	public LaneID FromLane;
+	public LaneID ToLane;
+	public bool IsBypass;
+}

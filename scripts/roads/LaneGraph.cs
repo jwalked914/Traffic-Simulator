@@ -5,15 +5,26 @@ using System.Linq;
 public partial class LaneGraph : Node
 {
 	private Dictionary<LaneID, List<LaneConnection>> _outgoing = new();
-	private int _nextLaneID = 0;
-
-	public LaneID CreateLaneID() => new LaneID(_nextLaneID++);
+	
+	// implements Linear Congruential Generator for unique lane-ids
+	private const ulong Multiplier = 0x5851F42D4C957F2D;
+	private const ulong Increment = 0x14057B7EF767814F;
+	
+	private ulong _lastID = 1;
+	
+	public LaneID CreateLaneID()
+	{
+		unchecked {_lastID = _lastID * Multiplier + Increment;}
+		return new LaneID(_lastID);
+	}
 
 	public void Connect(LaneID from, LaneID to)
 	{
 		if (!_outgoing.ContainsKey(from)) _outgoing[from] = new();
 		_outgoing[from].Add(new LaneConnection(from, to));
 	}
+	
+	public void Clear() => _outgoing.Clear();
 
 	public IEnumerable<LaneConnection> GetOutgoing(LaneID lane) =>
 		_outgoing.TryGetValue(lane, out var list) ? list : Enumerable.Empty<LaneConnection>();
