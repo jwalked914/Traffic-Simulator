@@ -1,40 +1,75 @@
 using Godot;
 
-// root of UI layer
-// other systems read CurrentTool
-// listen for ToolChanged here.
 public partial class UIRoot : CanvasLayer
 {
+    [Signal] public delegate void ToolChangedEventHandler(int tool);
+    [Export(PropertyHint.File, "*.tscn")]
+    public string MainMenuScene { get; set; } = "res://scenes/MainMenu.tscn";
+    public ToolType CurrentTool { get; private set; } = ToolType.None;
+    private ToolBox _toolBox;
+    private InspectorPanel _inspector;
+    private StructureGraph _structures;
 
-	[Signal] public delegate void ToolChangedEventHandler(int tool);
+    // connects inspector actions to building edits and placement settings
+    public override void _Ready()
+    {
+        _toolBox = GetNode<ToolBox>("ToolBox");
+        _inspector = GetNode<InspectorPanel>("InspectorPanel");
+        _structures = GetNode<StructureGraph>("../World/StructureGraph");
+        var roads = GetNode<RoadGraph>("../World/RoadGraph");
+        _inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
+        GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
+        _toolBox.ToolSelected += OnToolSelected;
+        _inspector.DraftChanged += _structures.SetDraft;
+        _inspector.ApplyRequested += ApplyStructure;
+        _inspector.DeleteRequested += DeleteStructure;
+        _inspector.NewRequested += () => _toolBox.SelectTool(ToolType.Structure);
+        _inspector.CloseRequested += () => _toolBox.SelectTool(ToolType.None);
+        _structures.SelectionChanged += OnStructureSelected;
+        _structures.StructuresChanged += _inspector.RefreshDetails;
+        _structures.PlacementRejected += _inspector.SetMessage;
+    }
 
-	// loads main menu scene
-	[Export(PropertyHint.File, "*.tscn")] public string MainMenuScene { get; set; } = "res://scenes/MainMenu.tscn";
+    // disconnects building updates when leaving the simulator
+    public override void _ExitTree()
+    {
+        if (_structures == null) return;
+        _structures.SelectionChanged -= OnStructureSelected;
+        _structures.StructuresChanged -= _inspector.RefreshDetails;
+        _structures.PlacementRejected -= _inspector.SetMessage;
+    }
 
-	public ToolType CurrentTool{ get; private set; } = ToolType.None;
+    // clears the old building selection before switching tools
+    private void OnToolSelected(int tool)
+    {
+        CurrentTool = (ToolType)tool;
+        _structures.Select(null);
+        _inspector.ShowForTool(CurrentTool);
+        EmitSignal(SignalName.ToolChanged, tool);
+    }
 
-	private ToolBox toolBox;
-	private InspectorPanel inspectorPanel;
-	private MenuButton simMenuButton;
+    // shows the selected building or returns to the active tool's settings
+    private void OnStructureSelected(Structure structure)
+    {
+        if (structure == null) _inspector.ShowForTool(CurrentTool);
+        else _inspector.ShowStructure(structure);
+    }
 
-	public override void _Ready()
-	{
-		toolBox = GetNode<ToolBox>("ToolBox");
-		inspectorPanel = GetNode<InspectorPanel>("InspectorPanel");
-		
-		simMenuButton = GetNode<MenuButton>("SimMenuButton");
-		simMenuButton.GetPopup().IdPressed += OnSimMenuItemPressed;
+    // applies the inspector's values or shows why the edit was rejected
+    private void ApplyStructure()
+    {
+        if (!_structures.TryEdit(_structures.Selected, _inspector.ChosenType,
+            _inspector.ChosenSize, _inspector.ChosenParkingRows, out string error))
+            _inspector.SetMessage(error);
+        else _inspector.ShowStructure(_structures.Selected);
+    }
 
-		toolBox.ToolSelected += OnToolSelected;
-	}
-
-
-	private void OnToolSelected(int tool)
-	{
-		CurrentTool = (ToolType)tool;
-		inspectorPanel.ShowForTool(CurrentTool);
-		EmitSignal(SignalName.ToolChanged, tool);
-	}
+    // removes the selected building or shows why it cannot be removed
+    private void DeleteStructure()
+    {
+        if (!_structures.TryRemove(_structures.Selected, out string error))
+            _inspector.SetMessage(error);
+    }
 
 	private void OnSimMenuItemPressed(long id)
 	{

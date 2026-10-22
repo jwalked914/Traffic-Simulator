@@ -28,7 +28,7 @@ public readonly struct LaneID
 }
 
 // in case we want to model different lane types later: parking, shoulder, bike lanes, etc.
-public enum LaneType {Driving}
+public enum LaneType { Driving, Parking, ParkingAisle }
 
 public readonly struct LaneConnection
 {

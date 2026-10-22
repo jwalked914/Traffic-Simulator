@@ -1,36 +1,38 @@
 using Godot;
+using System.Collections.Generic;
 
-public enum ToolType
-{
-	None,
-	Road,
-	Junction,
-	Location
-}
+public enum ToolType { None, Road, Junction, Structure }
+
 public partial class ToolBox : Control
 {
-	[Signal] public delegate void ToolSelectedEventHandler(int tool);
+    [Signal] public delegate void ToolSelectedEventHandler(int tool);
+    private readonly Dictionary<ToolType, Button> _buttons = new();
 
-	private Button roadButton;
-	private Button junctionButton;
-	private Button locationButton;
+    public override void _Ready()
+    {
+        _buttons[ToolType.Road] = GetNode<Button>("PanelContainer/ToolBoxButtons/RoadButton");
+        _buttons[ToolType.Junction] = GetNode<Button>("PanelContainer/ToolBoxButtons/JunctionButton");
+        _buttons[ToolType.Structure] = GetNode<Button>("PanelContainer/ToolBoxButtons/BuildingsButton");
+        foreach (Button button in _buttons.Values) button.Pressed += ReportSelected;
+    }
 
-	public override void _Ready()
-	{
-		roadButton = GetNode<Button>("PanelContainer/ToolBoxButtons/RoadButton");
-		junctionButton = GetNode<Button>("PanelContainer/ToolBoxButtons/JunctionButton");
-		locationButton = GetNode<Button>("PanelContainer/ToolBoxButtons/LocationButton");
+    // reports the pressed tool, or none if the user turns it off
+    private void ReportSelected()
+    {
+        foreach (var entry in _buttons)
+            if (entry.Value.ButtonPressed)
+            {
+                EmitSignal(SignalName.ToolSelected, (int)entry.Key);
+                return;
+            }
+        EmitSignal(SignalName.ToolSelected, (int)ToolType.None);
+    }
 
-		roadButton.Toggled += (pressed) => OnToolToggled(pressed, ToolType.Road);
-		junctionButton.Toggled += (pressed) => OnToolToggled(pressed, ToolType.Junction);
-		locationButton.Toggled += (pressed) => OnToolToggled(pressed, ToolType.Location);
-	}
-
-	// tells selected tool to UIRoot, or None when a button is unpressed
-	private void OnToolToggled(bool pressed, ToolType tool)
-	{
-		ToolType selected = pressed ? tool : ToolType.None;
-		EmitSignal(SignalName.ToolSelected, (int)selected);
-	}
+    // changes the pressed button and reports the selection 
+    public void SelectTool(ToolType tool)
+    {
+        foreach (var entry in _buttons)
+            entry.Value.SetPressedNoSignal(entry.Key == tool);
+        EmitSignal(SignalName.ToolSelected, (int)tool);
+    }
 }
-

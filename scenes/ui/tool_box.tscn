@@ -48,9 +48,9 @@ toggle_mode = true
 button_group = ExtResource("3_b7b3u")
 text = "JUNCTION"
 
-[node name="LocationButton" type="Button" parent="PanelContainer/ToolBoxButtons" unique_id=1606031145]
+[node name="BuildingsButton" type="Button" parent="PanelContainer/ToolBoxButtons" unique_id=1471871339]
 layout_mode = 2
 size_flags_horizontal = 3
 toggle_mode = true
 button_group = ExtResource("3_b7b3u")
-text = "LOCATION"
+text = "BUILDINGS"

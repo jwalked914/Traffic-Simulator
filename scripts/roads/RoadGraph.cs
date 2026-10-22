@@ -29,6 +29,8 @@ public partial class RoadGraph : Node2D
 	private CameraController _cameraController;
 	private LaneGraph _laneGraph;
 	private RoadNetwork _roadNetwork;
+	private UIRoot _ui;
+	private StructureGraph _structures;
 	private bool _isDraggingRoad;
 	private bool _isSelectingDelete;
 	private Vector2I _deleteStartCell;
@@ -39,6 +41,7 @@ public partial class RoadGraph : Node2D
 
 	public event Action<RoadSegment> RoadPlaced;
 	public event Action RoadsChanged;
+	public event Action<Vector2I, Vector2I> DeleteCellsRequested;
 
 	// converts a cell coordinate to its top-left position in the grid
 	public Vector2 CellToLocal(Vector2I cell)
@@ -100,7 +103,7 @@ public partial class RoadGraph : Node2D
 		// in theory should never happen but just in case
 		if (_cameraController == null)
 		{
-			GD.PushWarning("CameraController not found; edge panning is disabled.");
+			GD.PushWarning("CameraController not found, edge panning disabled.");
 		}
 
 		_laneGraph = GetNodeOrNull<LaneGraph>(LaneGraphPath);
@@ -114,10 +117,20 @@ public partial class RoadGraph : Node2D
 		}
 
 		_roadNetwork = new RoadNetwork(_laneGraph);
+		_ui = GetNode<UIRoot>("../../UI");
+		_structures = GetNode<StructureGraph>("../StructureGraph");
+		_ui.ToolChanged += OnToolChanged;
 		
 		VerifyCellConversions();
 		QueueRedraw();
 	}
+
+	public override void _ExitTree()
+	{
+		if (_ui != null) _ui.ToolChanged -= OnToolChanged;
+	}
+
+	private void OnToolChanged(int tool) => CancelCurrentDrag();
 
 	// updates whichever drag is currently active
 	public override void _Process(double delta)
@@ -157,6 +170,12 @@ public partial class RoadGraph : Node2D
 	// starts a road or deletion square using the left mouse button
 	public override void _UnhandledInput(InputEvent @event)
 	{
+		if (_roadNetwork == null) return;
+		if (!_isDraggingRoad && !_isSelectingDelete &&
+			_ui.CurrentTool != ToolType.Road &&
+			!(@event is InputEventMouseButton deleteMouse && deleteMouse.ShiftPressed &&
+				deleteMouse.ButtonIndex == MouseButton.Left && deleteMouse.Pressed))
+			return;
 		if (@event is InputEventMouseButton mouseButton && mouseButton.ButtonIndex == MouseButton.Left)
 		{
 			if (mouseButton.Pressed)
@@ -199,6 +218,7 @@ public partial class RoadGraph : Node2D
 		_draggedCells.Clear();
 
 		Vector2I startingCell = GlobalToCell(GetGlobalMousePosition());
+		if (_structures.IsCellOccupied(startingCell)) return;
 
 		_draggedCells.Add(startingCell);
 		_isDraggingRoad = true;
@@ -236,6 +256,7 @@ public partial class RoadGraph : Node2D
 				currentCell += new Vector2I(0, Math.Sign(difference.Y));
 			}
 
+			if (_structures.IsCellOccupied(currentCell)) break;
 			AddDraggedCell(currentCell);
 		}
 
@@ -259,6 +280,24 @@ public partial class RoadGraph : Node2D
 		}
 	}
 
+	// placement validation
+	public bool TryAddRoad(IReadOnlyList<Vector2I> path, out RoadSegment segment)
+	{
+		segment = null;
+		if (_roadNetwork == null || path == null || path.Count < 2 ||
+			path.Any(cell => _structures.IsCellOccupied(cell))) return false;
+		for (int i = 1; i < path.Count; i++)
+		{
+			Vector2I difference = path[i] - path[i - 1];
+			if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1) return false;
+		}
+		segment = _roadNetwork.AddSegment(path);
+		RoadPlaced?.Invoke(segment);
+		RoadsChanged?.Invoke();
+		QueueRedraw();
+		return true;
+	}
+
 	// places the road that was shown in the preview
 	private void FinishRoadDrag()
 	{
@@ -269,13 +308,7 @@ public partial class RoadGraph : Node2D
 
 		ContinueRoadDrag(GlobalToCell(GetGlobalMousePosition()));
 
-		if (_draggedCells.Count >= 2)
-		{
-			RoadSegment segment = _roadNetwork.AddSegment(_draggedCells);
-
-			RoadPlaced?.Invoke(segment);
-			RoadsChanged?.Invoke();
-		}
+		TryAddRoad(_draggedCells, out _);
 
 		_draggedCells.Clear();
 		_isDraggingRoad = false;
@@ -308,7 +341,7 @@ public partial class RoadGraph : Node2D
 	}
 
 	// removes roads within the box when the mouse is released
-	// TODO: update this later to handle buildings and what not as well
+	// buildings touched by the box are removed as whole buildings
 	private void FinishDeleteSelection()
 	{
 		if (!_isSelectingDelete)
@@ -322,6 +355,8 @@ public partial class RoadGraph : Node2D
 		SetEdgePan(false);
 
 		DeleteRoadCellsInSelection();
+		GetDeleteBounds(out Vector2I minCell, out Vector2I maxCell);
+		DeleteCellsRequested?.Invoke(minCell, maxCell);
 		QueueRedraw();
 	}
 
@@ -390,6 +425,36 @@ public partial class RoadGraph : Node2D
 		foreach (Vector2I cell in cells)
 		{
 			DrawRoadJoint(CellToLocalCenter(cell), color, roadWidth);
+		}
+
+		DrawRoadMarkings(cells, roadWidth, color.A);
+	}
+
+	// draws a dashed center line that follows the road's width
+	private void DrawRoadMarkings(IReadOnlyList<Vector2I> cells, float roadWidth, float opacity)
+	{
+		Color stripeColor = new Color(0.96f, 0.98f, 1, opacity);
+		float stripeWidth = Mathf.Max(1, roadWidth * 0.04f);
+		float inset = roadWidth * 0.5f;
+
+		for (int i = 1; i < cells.Count; i++)
+		{
+			Vector2I step = cells[i] - cells[i - 1];
+			Vector2 direction = ((Vector2)step).Normalized();
+			Vector2 from = CellToLocalCenter(cells[i - 1]);
+			Vector2 to = CellToLocalCenter(cells[i]);
+
+			// leave bends and road ends clear
+			if (i == 1 || cells[i - 1] - cells[i - 2] != step)
+			{
+				from += direction * inset;
+			}
+			if (i == cells.Count - 1 || cells[i + 1] - cells[i] != step)
+			{
+				to -= direction * inset;
+			}
+
+			DrawDashedLine(from, to, stripeColor, stripeWidth, roadWidth * 0.3f, true, true);
 		}
 	}
 
