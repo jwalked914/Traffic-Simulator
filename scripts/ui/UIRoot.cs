@@ -61,6 +61,16 @@ public partial class UIRoot : CanvasLayer
 		_structures.SelectionChanged += OnStructureSelected;
 		_structures.StructuresChanged += _inspector.RefreshDetails;
 		_structures.PlacementRejected += _inspector.SetMessage;
+
+		// load a scenario selected from the main menu, if one was selected
+		string path = ScenarioLoadRequest.PendingPath;
+		if (!string.IsNullOrEmpty(path))
+		{
+			ScenarioLoadRequest.PendingPath = null;
+			ImportResult result = _scenario.LoadFrom(path);
+			_toolBox.SelectTool(ToolType.None);
+			ReportErrors(result);
+		}
 	}
 
 	// disconnects building updates when leaving the simulator
