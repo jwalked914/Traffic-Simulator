@@ -10,7 +10,7 @@ public enum DriverPersonality
     Aggressive
 }
 
-public partial class Driver : Node
+public partial class Driver : Node2D
 {
     //driver id
     public int DriverId { get; set; }
@@ -58,7 +58,14 @@ public partial class Driver : Node
 
     //random number generated to choose random color for car
     private static readonly RandomNumberGenerator Random =
-        new RandomNumberGenerator();
+    CreateRandomGenerator();
+
+    private static RandomNumberGenerator CreateRandomGenerator()
+    {
+        var random = new RandomNumberGenerator();
+        random.Randomize();
+        return random;
+    }
 
     //default for now
     public Color CarColor { get; private set; } = Colors.White;
@@ -88,8 +95,141 @@ public partial class Driver : Node
         }
     }
 
+    public override void _Ready()
+    {
+        // Set driver's speed from personality
+        AssignSpeed();
+
+        // choose color for car
+        AssignRandomCarColor();
+
+        // Create car visual
+        CarGraphics = new CarVisual();
+        CarGraphics.Name = "CarVisual";
+        AddChild(CarGraphics);
+    }
+
+
     //path the driver will travel through
     public List<LaneID> Route { get; private set; } = new List<LaneID>();
+
+    
+    // world coordinates
+    private readonly List<Vector2> _waypoints = new List<Vector2>();
+
+    // The next waypoint the driver is going to
+    private int _currentWaypoint = 0;
+
+    // true when route to follow
+    public bool IsMoving { get; private set; } = false;
+
+    private float _laneOffset = 0.0f;
+
+    public void SetLaneWaypoints(
+        IEnumerable<Vector2> waypoints,
+        float laneOffset)   
+    {
+        _laneOffset = laneOffset;
+        SetWaypoints(waypoints);
+        var points = new List<Vector2>(waypoints);
+        var offsetPoints = new List<Vector2>();
+
+        for (int i = 0; i < points.Count; i++)
+        {
+            Vector2 tangent;
+
+            if (i == 0)
+            {
+                tangent = points[1] - points[0];
+            }
+            else if (i == points.Count - 1)
+            {
+                tangent = points[i] - points[i - 1];
+            }
+            else
+            {
+                tangent = points[i + 1] - points[i - 1];
+            }
+
+            tangent = tangent.Normalized();
+
+            Vector2 normal = new Vector2(-tangent.Y, tangent.X);
+            offsetPoints.Add(points[i] + normal * laneOffset);
+        }
+
+        SetWaypoints(offsetPoints);
+    }   
+
+    
+
+    public void SetWaypoints(IEnumerable<Vector2> waypoints)
+    {
+        _waypoints.Clear();
+        _waypoints.AddRange(waypoints);
+
+        _currentWaypoint = 0;
+        IsMoving = _waypoints.Count > 0;
+
+        if (IsMoving)
+        {
+            // Start at the first point in the route.
+            GlobalPosition = _waypoints[0];
+            _currentWaypoint = 1;
+        }
+    }
+
+    
+    public override void _Process(double delta)
+    {
+        // for no route
+        if (!IsMoving || _currentWaypoint >= _waypoints.Count)
+        {
+            IsMoving = false;
+            return;
+        }
+
+        Vector2 target = _waypoints[_currentWaypoint];
+        Vector2 direction = target - GlobalPosition;
+
+        if (direction.Length() < 1.0f)
+        {
+            GlobalPosition = target;
+            _currentWaypoint++;
+
+            if (_currentWaypoint >= _waypoints.Count)
+            {
+                IsMoving = false;
+            }
+
+            return;
+        }
+
+        // face forward to route
+        Rotation = direction.Angle();
+
+        // move to next point.
+        float distance = Speed * (float)delta;
+
+        GlobalPosition = GlobalPosition.MoveToward(
+            target,
+            distance
+        );
+
+        // check that car made it 
+        if (GlobalPosition.DistanceTo(target) < 1.0f)
+        {
+            GlobalPosition = target;
+            _currentWaypoint++;
+
+            if (_currentWaypoint >= _waypoints.Count)
+            {
+                IsMoving = false;
+            }
+        }
+    }
+
+
+
 
     //calculates route with existing LaneGraph
     public bool CalculateRoute(

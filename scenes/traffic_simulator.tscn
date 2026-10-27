@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://4n2ucw1ie7ry" path="res://scripts/roads/LaneGraph.cs" id="4_jqfeq"]
 [ext_resource type="Script" uid="uid://dxjhsj6wmqvbm" path="res://scripts/structures/StructureGraph.cs" id="4_jyxc4"]
 [ext_resource type="PackedScene" uid="uid://jph0f7dwakyp" path="res://scenes/ui/ui_root.tscn" id="5_jqfeq"]
+[ext_resource type="Script" uid="uid://bjg1naut2jqob" path="res://scripts/drivers/DriverSpawner.cs" id="5_ptuai"]
 
 [node name="TrafficSimulator" type="Node2D" unique_id=1027597209]
 
@@ -22,6 +23,9 @@ script = ExtResource("4_jqfeq")
 
 [node name="StructureGraph" type="Node2D" parent="World" unique_id=1656615392]
 script = ExtResource("4_jyxc4")
+
+[node name="DriverSpawner" type="Node2D" parent="World" unique_id=103154108]
+script = ExtResource("5_ptuai")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1600570113]
 visible = false
