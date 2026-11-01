@@ -9,13 +9,13 @@ Label/colors/font_color = Color(0.22, 0.24, 0.27, 1)
 
 [node name="InspectorPanel" type="Control" unique_id=1062938724]
 layout_mode = 3
-anchors_preset = 6
+anchors_preset = 11
 anchor_left = 1.0
-anchor_top = 0.5
 anchor_right = 1.0
-anchor_bottom = 0.5
+anchor_bottom = 1.0
+offset_left = -360
 grow_horizontal = 0
-grow_vertical = 2
+mouse_filter = 2
 script = ExtResource("1_sta7u")
 
 [node name="PanelContainer" type="PanelContainer" parent="." unique_id=987527619]
@@ -25,13 +25,24 @@ anchors_preset = 6
 anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
+<<<<<<< HEAD
 anchor_bottom = 1.0
 offset_left = -320.0
 offset_top = -360.0
 offset_right = -8.0
 offset_bottom = 360.0
 grow_horizontal = 2
+=======
+anchor_bottom = 0.5
+offset_left = -266.0
+offset_top = -214.0
+offset_right = -16.0
+offset_bottom = 214.0
+grow_horizontal = 0
+>>>>>>> inspector-road-settings
 grow_vertical = 2
+pivot_offset = Vector2(250, 214)
+scale = Vector2(1.2, 1.2)
 theme_override_styles/panel = ExtResource("2_ytbsa")
 
 [node name="InspectorContent" type="VBoxContainer" parent="PanelContainer" unique_id=1725770395]

@@ -5,15 +5,22 @@ using System.Linq;
 
 public enum StructureType
 {
+<<<<<<< HEAD
     House,
     Shop,
     School,
     Producer,
     Consumer
+=======
+	House,
+	Shop,
+	School
+>>>>>>> inspector-road-settings
 }
 
 public class Structure
 {
+<<<<<<< HEAD
     public Vector2I AnchorCell { get; }
     public StructureType Type { get; private set; }
     public Vector2I SizeInCells { get; private set; }
@@ -33,15 +40,34 @@ public class Structure
     public Lane EntryLane { get; private set; }
     public Lane ExitLane { get; private set; }
     public event Action ParkingChanged;
+=======
+	public Vector2I AnchorCell { get; }
+	public StructureType Type { get; private set; }
+	public Vector2I SizeInCells { get; private set; }
+	public int ParkingRows { get; private set; }
+	public Rect2I Bounds => new Rect2I(AnchorCell, SizeInCells);
+	public ParkingLayout Parking { get; private set; }
+	public int ParkingCapacity => Parking.Capacity;
+	public int ReservedCount => _reservations.Count;
+	public RoadSegment AccessRoad { get; internal set; }
+	public Vector2I? AccessCell { get; internal set; }
+	public bool IsConnected => AccessRoad != null;
+	public IReadOnlyList<Lane> ParkingLanes => _parkingLanes.AsReadOnly();
+	public IReadOnlyList<Lane> AisleLanes => _aisleLanes.AsReadOnly();
+	public Lane EntryLane { get; private set; }
+	public Lane ExitLane { get; private set; }
+	public event Action ParkingChanged;
+>>>>>>> inspector-road-settings
 
-    private readonly List<Lane> _parkingLanes = new();
-    private readonly List<Lane> _aisleLanes = new();
-    private readonly Dictionary<long, int> _reservations = new();
-    private readonly HashSet<int> _reservedSpaces = new();
-    private readonly float _cellSize;
-    private readonly float _roadWidth;
-    private int _nextFreeSpace;
+	private readonly List<Lane> _parkingLanes = new();
+	private readonly List<Lane> _aisleLanes = new();
+	private readonly Dictionary<long, int> _reservations = new();
+	private readonly HashSet<int> _reservedSpaces = new();
+	private readonly float _cellSize;
+	private readonly float _roadWidth;
+	private int _nextFreeSpace;
 
+<<<<<<< HEAD
     public Structure(Vector2I anchor, StructureType type, Vector2I size, int parkingRows,
         float cellSize = 128.0f, float roadWidth = 32.0f, int driverCount = 0, int rotationSteps = 0)
     {
@@ -148,24 +174,70 @@ public class Structure
         for (int i = 0; i < path.Length; i++) path[i] = transform * path[i];
         return path;
     }
+=======
+	public Structure(Vector2I anchor, StructureType type, Vector2I size, int parkingRows,
+		float cellSize = 128.0f, float roadWidth = 32.0f)
+	{
+		AnchorCell = anchor;
+		_cellSize = cellSize;
+		_roadWidth = roadWidth;
+		Configure(type, size, parkingRows);
+	}
 
-    public Vector2[] GetParkingEntryPath(int index)
-    {
-        if (!IsConnected)
-        {
-            throw new InvalidOperationException("This building has no road access.");
-        }
+	public static bool IsValid(StructureType type, Vector2I size, int parkingRows) =>
+		Enum.IsDefined(typeof(StructureType), type) && size.X >= 1 && size.X <= 32 && size.Y >= 2 &&
+		size.Y <= 32 && parkingRows >= 1 && parkingRows < size.Y;
 
+	// checks the new layout before changing the building's settings
+	internal void Configure(StructureType type, Vector2I size, int parkingRows)
+	{
+		if (!IsValid(type, size, parkingRows))
+		{
+			throw new ArgumentException(
+				"Use a width between 1 and 32, a height between 2 and 32, and at least one building and parking row.");
+		}
+		var parking = new ParkingLayout(AnchorCell, size, parkingRows, _cellSize, _roadWidth);
+		if (parking.Capacity == 0)
+		{
+			throw new ArgumentException("The parking area needs room for spaces and a driving aisle.");
+		}
+		if (parking.Capacity > ParkingLayout.MaximumCapacity)
+		{
+			throw new ArgumentException("Reduce the parking area for this road scale.");
+		}
+
+		Type = type;
+		SizeInCells = size;
+		ParkingRows = parkingRows;
+		Parking = parking;
+	}
+
+	public Vector2 GetParkingPosition(int index) => Parking.GetSpaceRect(index).GetCenter();
+>>>>>>> inspector-road-settings
+
+	public Vector2[] GetParkingEntryPath(int index)
+	{
+		if (!IsConnected)
+		{
+			throw new InvalidOperationException("This building has no road access.");
+		}
+
+<<<<<<< HEAD
         return RotatePath(Parking.GetEntryPath(index, GetOriginalAccessCell()));
     }
+=======
+		return Parking.GetEntryPath(index, AccessCell.Value);
+	}
+>>>>>>> inspector-road-settings
 
-    public Vector2[] GetParkingExitPath(int index)
-    {
-        if (!IsConnected)
-        {
-            throw new InvalidOperationException("This building has no road access.");
-        }
+	public Vector2[] GetParkingExitPath(int index)
+	{
+		if (!IsConnected)
+		{
+			throw new InvalidOperationException("This building has no road access.");
+		}
 
+<<<<<<< HEAD
         return RotatePath(Parking.GetExitPath(index, GetOriginalAccessCell()));
     }
 
@@ -181,18 +253,35 @@ public class Structure
             Lane departure = CreateAisleLane(graph);
             graph.Connect(EntryLane.Id, arrival.Id);
             graph.Connect(departure.Id, ExitLane.Id);
+=======
+		return Parking.GetExitPath(index, AccessCell.Value);
+	}
 
-            for (int column = 0; column < Parking.Columns; column++)
-            {
-                int index = row * Parking.Columns + column;
-                var space = new Lane(graph.CreateLaneID(), index, LaneType.Parking, 0);
-                _parkingLanes.Add(space);
-                graph.Connect(arrival.Id, space.Id);
-                graph.Connect(space.Id, departure.Id);
-            }
-        }
-    }
+	// gives each space its own route through the lot's entry and exit aisles
+	internal void CreateParkingLanes(LaneGraph graph)
+	{
+		EntryLane = CreateAisleLane(graph);
+		ExitLane = CreateAisleLane(graph);
+		for (int row = 0; row < Parking.Rows; row++)
+		{
+			Lane arrival = CreateAisleLane(graph);
+			Lane departure = CreateAisleLane(graph);
+			graph.Connect(EntryLane.Id, arrival.Id);
+			graph.Connect(departure.Id, ExitLane.Id);
+>>>>>>> inspector-road-settings
 
+			for (int column = 0; column < Parking.Columns; column++)
+			{
+				int index = row * Parking.Columns + column;
+				var space = new Lane(graph.CreateLaneID(), index, LaneType.Parking, 0);
+				_parkingLanes.Add(space);
+				graph.Connect(arrival.Id, space.Id);
+				graph.Connect(space.Id, departure.Id);
+			}
+		}
+	}
+
+<<<<<<< HEAD
     private Lane CreateAisleLane(LaneGraph graph)
     {
         LaneType laneType = IsTrafficEndpoint(Type) ? LaneType.Driving : LaneType.ParkingAisle;
@@ -200,18 +289,27 @@ public class Structure
         _aisleLanes.Add(lane);
         return lane;
     }
+=======
+	private Lane CreateAisleLane(LaneGraph graph)
+	{
+		var lane = new Lane(graph.CreateLaneID(), _aisleLanes.Count, LaneType.ParkingAisle, 0);
+		_aisleLanes.Add(lane);
+		return lane;
+	}
+>>>>>>> inspector-road-settings
 
-    // removes the lot's lanes and any connections that still point to them
-    internal void RemoveParkingLanes(LaneGraph graph)
-    {
-        graph.RemoveLanes(_parkingLanes.Concat(_aisleLanes).Select(lane => lane.Id));
-        _parkingLanes.Clear();
-        _aisleLanes.Clear();
-        EntryLane = null;
-        ExitLane = null;
-        _nextFreeSpace = 0;
-    }
+	// removes the lot's lanes and any connections that still point to them
+	internal void RemoveParkingLanes(LaneGraph graph)
+	{
+		graph.RemoveLanes(_parkingLanes.Concat(_aisleLanes).Select(lane => lane.Id));
+		_parkingLanes.Clear();
+		_aisleLanes.Clear();
+		EntryLane = null;
+		ExitLane = null;
+		_nextFreeSpace = 0;
+	}
 
+<<<<<<< HEAD
     public bool IsSpaceReserved(int index) => _reservedSpaces.Contains(index);
     
     public void ClearParkingReservations()
@@ -221,45 +319,48 @@ public class Structure
         _nextFreeSpace = 0;
         ParkingChanged?.Invoke();
     }
+=======
+	public bool IsSpaceReserved(int index) => _reservedSpaces.Contains(index);
+>>>>>>> inspector-road-settings
 
-    // keeps one space per vehicle while skipping earlier reserved spaces
-    public bool TryReserveParking(long vehicleId, out LaneID destination)
-    {
-        destination = default;
-        if (_reservations.TryGetValue(vehicleId, out int existing))
-        {
-            destination = _parkingLanes[existing].Id;
-            return true;
-        }
+	// keeps one space per vehicle while skipping earlier reserved spaces
+	public bool TryReserveParking(long vehicleId, out LaneID destination)
+	{
+		destination = default;
+		if (_reservations.TryGetValue(vehicleId, out int existing))
+		{
+			destination = _parkingLanes[existing].Id;
+			return true;
+		}
 
-        if (!IsConnected || ReservedCount == ParkingCapacity) return false;
+		if (!IsConnected || ReservedCount == ParkingCapacity) return false;
 
-        for (int i = _nextFreeSpace; i < _parkingLanes.Count; i++)
-        {
-            if (IsSpaceReserved(i)) continue;
-            _reservations.Add(vehicleId, i);
-            _reservedSpaces.Add(i);
-            _nextFreeSpace = i + 1;
-            ParkingChanged?.Invoke();
-            destination = _parkingLanes[i].Id;
-            return true;
-        }
+		for (int i = _nextFreeSpace; i < _parkingLanes.Count; i++)
+		{
+			if (IsSpaceReserved(i)) continue;
+			_reservations.Add(vehicleId, i);
+			_reservedSpaces.Add(i);
+			_nextFreeSpace = i + 1;
+			ParkingChanged?.Invoke();
+			destination = _parkingLanes[i].Id;
+			return true;
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    // frees the vehicle's space and makes it available for the next search
-    public bool ReleaseParking(long vehicleId)
-    {
-        if (!_reservations.Remove(vehicleId, out int index))
-        {
-            return false;
-        }
+	// frees the vehicle's space and makes it available for the next search
+	public bool ReleaseParking(long vehicleId)
+	{
+		if (!_reservations.Remove(vehicleId, out int index))
+		{
+			return false;
+		}
 
-        _reservedSpaces.Remove(index);
-        _nextFreeSpace = Math.Min(_nextFreeSpace, index);
-        ParkingChanged?.Invoke();
-        return true;
-    }
+		_reservedSpaces.Remove(index);
+		_nextFreeSpace = Math.Min(_nextFreeSpace, index);
+		ParkingChanged?.Invoke();
+		return true;
+	}
 
 }

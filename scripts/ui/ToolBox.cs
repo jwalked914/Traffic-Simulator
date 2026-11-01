@@ -1,33 +1,32 @@
 using Godot;
 using System.Collections.Generic;
 
-public enum ToolType { None, Road, Junction, Structure }
+public enum ToolType { None, Road, Junction, Structure, Home, Roundabout }
 
 public partial class ToolBox : Control
 {
-    [Signal] public delegate void ToolSelectedEventHandler(int tool);
-    private readonly Dictionary<ToolType, Button> _buttons = new();
+	[Signal] public delegate void ToolSelectedEventHandler(int tool);
+	[Export] public int PageSize { get; set; }= 4;
+	
+	private readonly Dictionary<ToolType, Button> _buttons = new();
+	private readonly List<Button> _tiles = new();
+	private Button _prev;
+	private Button _next;
+	private int _page;
 
-    public override void _Ready()
-    {
-        _buttons[ToolType.Road] = GetNode<Button>("PanelContainer/ToolBoxButtons/RoadButton");
-        _buttons[ToolType.Junction] = GetNode<Button>("PanelContainer/ToolBoxButtons/JunctionButton");
-        _buttons[ToolType.Structure] = GetNode<Button>("PanelContainer/ToolBoxButtons/BuildingsButton");
-        foreach (Button button in _buttons.Values) button.Pressed += ReportSelected;
-    }
+	private int PageCount => Mathf.Max(1, Mathf.CeilToInt(_tiles.Count / (float)PageSize));
 
-    // reports the pressed tool, or none if the user turns it off
-    private void ReportSelected()
-    {
-        foreach (var entry in _buttons)
-            if (entry.Value.ButtonPressed)
-            {
-                EmitSignal(SignalName.ToolSelected, (int)entry.Key);
-                return;
-            }
-        EmitSignal(SignalName.ToolSelected, (int)ToolType.None);
-    }
+	// registers tool tiles in display order and shows the first page
+	public override void _Ready()
+	{
+		_buttons[ToolType.Road] = GetNode<Button>("PanelContainer/ToolBoxButtons/RoadButton");
+		_buttons[ToolType.Junction] = GetNode<Button>("PanelContainer/ToolBoxButtons/JunctionButton");
+		_buttons[ToolType.Structure] = GetNode<Button>("PanelContainer/ToolBoxButtons/BuildingsButton");
+		_buttons[ToolType.Home] = GetNode<Button>("PanelContainer/ToolBoxButtons/HomeButton");
+		_buttons[ToolType.Roundabout] = GetNode<Button>("PanelContainer/ToolBoxButtons/RoundaboutButton");
+		foreach (Button button in _buttons.Values) button.Pressed += ReportSelected;
 
+<<<<<<< HEAD
     // changes the pressed button and reports the selection 
     public void SelectTool(ToolType tool)
     {
@@ -43,4 +42,67 @@ public partial class ToolBox : Control
             button.Disabled = disabled;
         }
     }
+=======
+		// order of page
+		_tiles.AddRange(new[]
+		{
+			_buttons[ToolType.Road],
+			_buttons[ToolType.Junction],
+			_buttons[ToolType.Structure],
+			_buttons[ToolType.Home],
+			_buttons[ToolType.Roundabout],
+		});
+
+		_prev = GetNode<Button>("PanelContainer/ToolBoxButtons/PrevButton");
+		_next = GetNode<Button>("PanelContainer/ToolBoxButtons/NextButton");
+		_prev.Pressed += () => ShowPage(_page - 1);
+		_next.Pressed += () => ShowPage(_page + 1);
+
+		ShowPage(0);
+	}
+	
+	private void AddTile(ToolType tool, string path)
+	{
+		var button = GetNode<Button>(path);
+		button.Pressed += ReportSelected;
+		_buttons[tool] = button;
+		_tiles.Add(button);
+	}
+
+
+	// shows only tiles of current page and hide navigation arrow
+	private void ShowPage(int page)
+	{
+		_page = Mathf.Clamp(page, 0, PageCount - 1);
+		for (int i = 0; i < _tiles.Count; i++)
+		_tiles[i].Visible = i / PageSize == page;
+
+		_prev.Visible = _page > 0;
+		_next.Visible = _page < PageCount - 1;
+	}
+
+	// reports the pressed tool, or none if the user turns it off
+	private void ReportSelected()
+	{
+		foreach (var entry in _buttons)
+			if (entry.Value.ButtonPressed)
+			{
+				EmitSignal(SignalName.ToolSelected, (int)entry.Key);
+				return;
+			}
+		EmitSignal(SignalName.ToolSelected, (int)ToolType.None);
+	}
+
+	// changes the pressed button and reports the selection 
+	public void SelectTool(ToolType tool)
+	{
+		foreach (var entry in _buttons)
+			entry.Value.SetPressedNoSignal(entry.Key == tool);
+
+		if(_buttons.TryGetValue(tool, out Button selected))
+			ShowPage(_tiles.IndexOf(selected) / PageSize);
+
+		EmitSignal(SignalName.ToolSelected, (int)tool);
+	}
+>>>>>>> inspector-road-settings
 }
