@@ -1,9 +1,10 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class InspectorPanel : Control
 {
-    public event Action<StructureType, Vector2I, int> DraftChanged;
+    public event Action<StructureType, Vector2I, int, int> DraftChanged;
     public event Action ApplyRequested;
     public event Action DeleteRequested;
     public event Action NewRequested;
@@ -11,6 +12,7 @@ public partial class InspectorPanel : Control
     public StructureType ChosenType => (StructureType)_buildingType.GetSelectedId();
     public Vector2I ChosenSize => new Vector2I((int)_widthInput.Value, (int)_heightInput.Value);
     public int ChosenParkingRows => (int)_parkingRowsInput.Value;
+    public int ChosenDriverCount => (int)_driverCountInput.Value;
 
     private Control _lanesField;
     private Control _speedField;
@@ -26,6 +28,10 @@ public partial class InspectorPanel : Control
     private SpinBox _widthInput;
     private SpinBox _heightInput;
     private SpinBox _parkingRowsInput;
+    private SpinBox _driverCountInput;
+    private Control _driverCountField;
+    private Label _driverCountLabel;
+    private readonly Dictionary<StructureType, (Vector2I Size, int ParkingRows, int DriverCount)> _buildingDefaults = new();
     private Button _closeButton;
     private Button _applyButton;
     private Button _deleteButton;
@@ -47,6 +53,7 @@ public partial class InspectorPanel : Control
     {
         FindControls();
         PopulateBuildingTypes();
+        LoadBuildingSettings(_buildingDefaults[ChosenType]);
         ConnectEvents();
         Visible = false;
     }
@@ -68,6 +75,9 @@ public partial class InspectorPanel : Control
         _widthInput = _buildingFields.GetNode<SpinBox>("Width");
         _heightInput = _buildingFields.GetNode<SpinBox>("Height");
         _parkingRowsInput = _buildingFields.GetNode<SpinBox>("ParkingRows");
+        _driverCountField = _buildingFields.GetNode<Control>("DriverCountField");
+        _driverCountInput = _driverCountField.GetNode<SpinBox>("DriverCount");
+        _driverCountLabel = _driverCountField.GetNode<Label>("Label");
         _detailsLabel = _buildingFields.GetNode<Label>("Details");
         _messageLabel = _buildingFields.GetNode<Label>("Message");
         _applyButton = _buildingFields.GetNode<Button>("ApplyButton");
@@ -81,6 +91,16 @@ public partial class InspectorPanel : Control
         foreach (StructureType type in Enum.GetValues<StructureType>())
         {
             _buildingType.AddItem(type.ToString(), (int)type);
+            int driverCount = type switch
+            {
+                StructureType.House => 1,
+                StructureType.Producer => 10,
+                _ => 0
+            };
+            bool endpoint = Structure.IsTrafficEndpoint(type);
+            Vector2I size = endpoint ? Vector2I.One : ChosenSize;
+            int parkingRows = Structure.HasParking(type) ? ChosenParkingRows : 0;
+            _buildingDefaults[type] = (size, parkingRows, driverCount);
         }
     }
 
@@ -92,10 +112,20 @@ public partial class InspectorPanel : Control
         _newButton.Pressed += () => NewRequested?.Invoke();
         _deleteButton.Pressed += () => DeleteRequested?.Invoke();
 
-        _buildingType.ItemSelected += _ => OnDraftChanged();
+        _buildingType.ItemSelected += OnBuildingTypeSelected;
         _widthInput.ValueChanged += _ => OnDraftChanged();
         _heightInput.ValueChanged += _ => OnDraftChanged();
         _parkingRowsInput.ValueChanged += _ => OnDraftChanged();
+        _driverCountInput.ValueChanged += _ => OnDraftChanged();
+    }
+
+    // each building type saves its own settings
+    // should make placing multiple buildings of the same type much easier
+    private void OnBuildingTypeSelected(long index)
+    {
+        if (_updatingControls) return;
+        LoadBuildingSettings(_buildingDefaults[ChosenType]);
+        OnDraftChanged();
     }
 
     // keeps room for the building and sends an update for each user change
@@ -107,10 +137,11 @@ public partial class InspectorPanel : Control
         }
 
         _updatingControls = true;
-        _parkingRowsInput.MaxValue = _heightInput.Value - 1;
+        _parkingRowsInput.MaxValue = Structure.HasParking(ChosenType) ? _heightInput.Value - 1 : 0;
         _updatingControls = false;
 
-        DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows);
+        _buildingDefaults[ChosenType] = (ChosenSize, ChosenParkingRows, ChosenDriverCount);
+        DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows, ChosenDriverCount);
         RefreshDetails();
         SetMessage("");
     }
@@ -123,8 +154,10 @@ public partial class InspectorPanel : Control
 
         if (tool == ToolType.Structure)
         {
+            LoadBuildingSettings(_buildingDefaults[ChosenType]);
+            DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows, ChosenDriverCount);
             _titleLabel.Text = "New building";
-            _typeLabel.Text = "Click an empty cell to place";
+            _typeLabel.Text = "Click to place | Press R to rotate";
             _subtitleLabel.Text = "Click an existing building to edit";
         }
         else
@@ -147,10 +180,10 @@ public partial class InspectorPanel : Control
 
         _titleLabel.Text = $"Selected: {structure.Type}";
         _typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
-        _subtitleLabel.Text = "Edit the building";
+        _subtitleLabel.Text = $"Edit the building · {structure.RotationSteps * 90}° left";
         SetMessage("");
 
-        DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows);
+        DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows, ChosenDriverCount);
         RefreshDetails();
     }
 
@@ -172,16 +205,36 @@ public partial class InspectorPanel : Control
     // fills the fields without sending extra draft changes
     private void LoadBuildingValues(Structure structure)
     {
-        _updatingControls = true;
         _buildingType.Select(_buildingType.GetItemIndex((int)structure.Type));
-        _widthInput.Value = structure.SizeInCells.X;
-        _heightInput.Value = structure.SizeInCells.Y;
-        _parkingRowsInput.MaxValue = structure.SizeInCells.Y - 1;
-        _parkingRowsInput.Value = structure.ParkingRows;
+        LoadBuildingSettings((structure.SizeInCells, structure.ParkingRows, structure.DriverCount));
+    }
+
+    private void LoadBuildingSettings((Vector2I Size, int ParkingRows, int DriverCount) settings)
+    {
+        _updatingControls = true;
+        bool endpoint = Structure.IsTrafficEndpoint(ChosenType);
+        bool parking = Structure.HasParking(ChosenType);
+        _heightInput.MinValue = parking ? 2 : 1;
+        _parkingRowsInput.MinValue = parking ? 1 : 0;
+        _widthInput.Value = settings.Size.X;
+        _heightInput.Value = settings.Size.Y;
+        _parkingRowsInput.MaxValue = parking ? settings.Size.Y - 1 : 0;
+        _parkingRowsInput.Value = settings.ParkingRows;
+        _widthInput.Visible = !endpoint;
+        _heightInput.Visible = !endpoint;
+        _parkingRowsInput.Visible = parking;
+        _buildingFields.GetNode<Control>("WidthLabel").Visible = !endpoint;
+        _buildingFields.GetNode<Control>("HeightLabel").Visible = !endpoint;
+        _buildingFields.GetNode<Control>("ParkingRowsLabel").Visible = parking;
+        int driverLimit = Structure.GetDriverLimit(ChosenType);
+        _driverCountField.Visible = driverLimit > 0;
+        _driverCountInput.MaxValue = driverLimit;
+        _driverCountInput.Value = settings.DriverCount;
+        _driverCountLabel.Text = ChosenType == StructureType.House ? "Resident drivers (0–4)" : "Total drivers per run";
         _updatingControls = false;
     }
 
-    // updates parking details and shows edit buttons only for an existing building
+    // updates the structure's details and edit buttons
     public void RefreshDetails()
     {
         bool hasSelection = _selectedStructure != null;
@@ -189,11 +242,28 @@ public partial class InspectorPanel : Control
         _deleteButton.Visible = hasSelection;
         _newButton.Visible = hasSelection;
 
+        if (Structure.IsTrafficEndpoint(ChosenType))
+        {
+            _detailsLabel.Text = _selectedStructure?.IsConnected == true
+                ? $"Road access: {_selectedStructure.AccessCell}"
+                : "Connect a road at the endpoint's facing edge.";
+            return;
+        }
+
+        if (ChosenType == StructureType.House)
+        {
+            string access = _selectedStructure?.IsConnected == true
+                ? $"Road access: {_selectedStructure.AccessCell}"
+                : "Connect a road next to the house's front edge.";
+            _detailsLabel.Text = access + "TODO";
+            return;
+        }
+
         if (_selectedStructure == null)
         {
             var parking = new ParkingLayout(Vector2I.Zero, ChosenSize, ChosenParkingRows, _cellSize, _roadWidth);
             _detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n" +
-                "Connect a road just below the lot.";
+                "Connect a road at the lot's entrance.";
             return;
         }
 

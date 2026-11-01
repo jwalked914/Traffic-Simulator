@@ -21,9 +21,15 @@ public partial class Driver : Node2D
     public float Speed { get; private set; }
 
     //start and destination
-    //TODO: will need to connect these to spawn (house?) and consumer structures
+    // assigned by the producer's route to a consumer
     public LaneID? SourceLane { get; set; }
     public LaneID? DestinationLane { get; set; }
+    public event Action<Driver> Arrived;
+    private Vector2 _sourceOpening;
+    private Vector2 _sourceDirection;
+    private bool _hasTunnelOpenings;
+    private bool _hasLeftTunnel;
+    private bool _enteringTunnel;
 
     //sets speed based on personality
     public void AssignSpeed()
@@ -123,16 +129,23 @@ public partial class Driver : Node2D
     // true when route to follow
     public bool IsMoving { get; private set; } = false;
 
-    private float _laneOffset = 0.0f;
-
     public void SetLaneWaypoints(
         IEnumerable<Vector2> waypoints,
         float laneOffset)   
     {
-        _laneOffset = laneOffset;
-        SetWaypoints(waypoints);
         var points = new List<Vector2>(waypoints);
-        var offsetPoints = new List<Vector2>();
+        SetWaypoints(CreateLaneWaypoints(points, laneOffset));
+    }
+
+    // creates a list of waypoints that are offset from the center, for visually showing cars in the correct lane
+    public static List<Vector2> CreateLaneWaypoints(IReadOnlyList<Vector2> points, float laneOffset)
+    {
+        var offsetPoints = new List<Vector2>(points.Count);
+        if (points.Count < 2)
+        {
+            offsetPoints.AddRange(points);
+            return offsetPoints;
+        }
 
         for (int i = 0; i < points.Count; i++)
         {
@@ -157,7 +170,7 @@ public partial class Driver : Node2D
             offsetPoints.Add(points[i] + normal * laneOffset);
         }
 
-        SetWaypoints(offsetPoints);
+        return offsetPoints;
     }   
 
     
@@ -178,13 +191,38 @@ public partial class Driver : Node2D
         }
     }
 
+    public void SetTunnelOpenings(Vector2 source, Vector2 sourceDirection, Vector2 consumer, Vector2 consumerDirection)
+    {
+        _sourceOpening = source;
+        _sourceDirection = sourceDirection;
+        _hasTunnelOpenings = true;
+        CarGraphics.SetTunnelOpenings(source, sourceDirection, consumer, consumerDirection);
+    }
+
+    private void UpdateTunnelClipping()
+    {
+        if (!_hasTunnelOpenings) return;
+        if (!_hasLeftTunnel && (GlobalPosition - _sourceOpening).Dot(_sourceDirection) > CarVisual.HalfLength * GlobalScale.X)
+        {
+            _hasLeftTunnel = true;
+            CarGraphics.FinishLeavingTunnel();
+        }
+        if (!_enteringTunnel && _currentWaypoint >= _waypoints.Count - 2)
+        {
+            _enteringTunnel = true;
+            CarGraphics.BeginEnteringTunnel();
+        }
+    }
+
     
     public override void _Process(double delta)
     {
         // for no route
-        if (!IsMoving || _currentWaypoint >= _waypoints.Count)
+        if (!IsMoving) return;
+        UpdateTunnelClipping();
+        if (_currentWaypoint >= _waypoints.Count)
         {
-            IsMoving = false;
+            CompleteRoute();
             return;
         }
 
@@ -195,10 +233,11 @@ public partial class Driver : Node2D
         {
             GlobalPosition = target;
             _currentWaypoint++;
+            UpdateTunnelClipping();
 
             if (_currentWaypoint >= _waypoints.Count)
             {
-                IsMoving = false;
+                CompleteRoute();
             }
 
             return;
@@ -214,22 +253,27 @@ public partial class Driver : Node2D
             target,
             distance
         );
+        UpdateTunnelClipping();
 
         // check that car made it 
         if (GlobalPosition.DistanceTo(target) < 1.0f)
         {
             GlobalPosition = target;
             _currentWaypoint++;
+            UpdateTunnelClipping();
 
             if (_currentWaypoint >= _waypoints.Count)
             {
-                IsMoving = false;
+                CompleteRoute();
             }
         }
     }
-
-
-
+    
+    private void CompleteRoute()
+    {
+        IsMoving = false;
+        Arrived?.Invoke(this);
+    }
 
     //calculates route with existing LaneGraph
     public bool CalculateRoute(

@@ -170,7 +170,7 @@ public partial class RoadGraph : Node2D
 	// starts a road or deletion square using the left mouse button
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (_roadNetwork == null) return;
+		if (_roadNetwork == null || _ui.IsSimulating) return;
 		if (!_isDraggingRoad && !_isSelectingDelete &&
 			_ui.CurrentTool != ToolType.Road &&
 			!(@event is InputEventMouseButton deleteMouse && deleteMouse.ShiftPressed &&
@@ -284,7 +284,7 @@ public partial class RoadGraph : Node2D
 	public bool TryAddRoad(IReadOnlyList<Vector2I> path, out RoadSegment segment)
 	{
 		segment = null;
-		if (_roadNetwork == null || path == null || path.Count < 2 ||
+		if (_roadNetwork == null || _ui.IsSimulating || path == null || path.Count < 2 ||
 			path.Any(cell => _structures.IsCellOccupied(cell))) return false;
 		for (int i = 1; i < path.Count; i++)
 		{

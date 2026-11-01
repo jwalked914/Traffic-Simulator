@@ -35,4 +35,12 @@ public partial class ToolBox : Control
             entry.Value.SetPressedNoSignal(entry.Key == tool);
         EmitSignal(SignalName.ToolSelected, (int)tool);
     }
+
+    public void SetDisabled(bool disabled)
+    {
+        foreach (Button button in _buttons.Values)
+        {
+            button.Disabled = disabled;
+        }
+    }
 }

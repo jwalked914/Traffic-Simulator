@@ -24,9 +24,9 @@ anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -320.0
-offset_top = -320.0
+offset_top = -360.0
 offset_right = -8.0
-offset_bottom = 320.0
+offset_bottom = 360.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_styles/panel = ExtResource("2_ytbsa")
@@ -179,6 +179,18 @@ text = "Parking depth (cells)"
 layout_mode = 2
 min_value = 1.0
 max_value = 2.0
+value = 1.0
+
+[node name="DriverCountField" type="VBoxContainer" parent="PanelContainer/InspectorContent/StructureFields"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="PanelContainer/InspectorContent/StructureFields/DriverCountField"]
+layout_mode = 2
+text = "Drivers (0–4)"
+
+[node name="DriverCount" type="SpinBox" parent="PanelContainer/InspectorContent/StructureFields/DriverCountField"]
+layout_mode = 2
+max_value = 4.0
 value = 1.0
 
 [node name="Details" type="Label" parent="PanelContainer/InspectorContent/StructureFields"]

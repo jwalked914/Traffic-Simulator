@@ -54,10 +54,10 @@ public class RoadNetwork
 		RegisterSegmentLanesAtJunction(segment, junctionA);
 		RegisterSegmentLanesAtJunction(segment, junctionB);
 
+		_segments.Add(segment);
 		ConnectThroughLanes(junctionA);
 		ConnectThroughLanes(junctionB);
 		
-		_segments.Add(segment);
 		return segment;
 	}
 
@@ -119,12 +119,24 @@ public class RoadNetwork
 			_junctions.Remove(cell);
 		}
 	}
-
-	// TODO: replace with proper default junction lane connections
+	
 	private void ConnectThroughLanes(RoadJunction junction)
 	{
-		List<Lane> incoming = junction.Lanes;
-		List<Lane> outgoing = junction.Lanes;
+		var incoming = new List<Lane>();
+		var outgoing = new List<Lane>();
+		foreach (RoadSegment segment in _segments)
+		{
+			if (segment.A == junction.AnchorCell)
+			{
+				incoming.AddRange(segment.LanesBtoA);
+				outgoing.AddRange(segment.LanesAtoB);
+			}
+			if (segment.B == junction.AnchorCell)
+			{
+				incoming.AddRange(segment.LanesAtoB);
+				outgoing.AddRange(segment.LanesBtoA);
+			}
+		}
 
 		foreach (Lane from in incoming)
 		{
@@ -132,7 +144,10 @@ public class RoadNetwork
 			{
 				if (from.Id != to.Id)
 				{
-					_laneGraph.Connect(from.Id, to.Id);
+					if (!_laneGraph.GetOutgoing(from.Id).Any(connection => connection.To == to.Id))
+					{
+						_laneGraph.Connect(from.Id, to.Id);
+					}
 				}
 			}
 		}
