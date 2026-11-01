@@ -76,6 +76,18 @@ public class RoadNetwork
 		RemoveSegmentLanesFromJunction(segment, segment.A);
 		RemoveSegmentLanesFromJunction(segment, segment.B);
 	}
+	
+	public void Clear()
+	{
+		var laneIDs = _segments
+			.SelectMany(s => s.LanesAtoB.Concat(s.LanesBtoA))
+			.Select(l => l.Id)
+			.ToList();
+			
+		_laneGraph.RemoveLanes(laneIDs);
+		_segments.Clear();
+		_junctions.Clear();
+	}
 
 	private void CreateLanesForSegment(RoadSegment segment)
 	{

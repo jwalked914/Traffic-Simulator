@@ -58,7 +58,7 @@ public partial class InspectorPanel : Control
     private float _cellSize = 128.0f;
     private float _roadWidth = 32.0f;
 
-    // uses the road's scale when showing parking capacity
+	// uses the road's scale when showing parking capacity
     public void SetParkingScale(float cellSize, float roadWidth)
     {
         _cellSize = cellSize;
@@ -174,74 +174,74 @@ public partial class InspectorPanel : Control
         RefreshDetails();
     }
 
-    // loads a selected building's settings into the inspector
-    public void ShowStructure(Structure structure)
-    {
-        _selectedStructure = structure;
-        ShowFieldsForTool(ToolType.Structure);
-        LoadBuildingValues(structure);
+	// loads a selected building's settings into the inspector
+	public void ShowStructure(Structure structure)
+	{
+		_selectedStructure = structure;
+		ShowFieldsForTool(ToolType.Structure);
+		LoadBuildingValues(structure);
 
-        _titleLabel.Text = $"Selected: {structure.Type}";
-        _typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
-        _subtitleLabel.Text = "Edit the building";
-        SetMessage("");
+		_titleLabel.Text = $"Selected: {structure.Type}";
+		_typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
+		_subtitleLabel.Text = "Edit the building";
+		SetMessage("");
 
-        DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows);
-        RefreshDetails();
-    }
+		DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows);
+		RefreshDetails();
+	}
 
-    // shows only the fields used by the active tool
-    private void ShowFieldsForTool(ToolType tool)
-    {
-        bool roadSelected = tool == ToolType.Road;
-        bool junctionSelected = tool == ToolType.Junction;
-        bool buildingSelected = tool == ToolType.Structure;
+	// shows only the fields used by the active tool
+	private void ShowFieldsForTool(ToolType tool)
+	{
+		bool roadSelected = tool == ToolType.Road;
+		bool junctionSelected = tool == ToolType.Junction;
+		bool buildingSelected = tool == ToolType.Structure;
 
-        _lanesField.Visible = roadSelected;
-        _speedField.Visible = roadSelected;
-        _signalField.Visible = junctionSelected;
-        _buildingFields.Visible = buildingSelected;
-        _typeIcon.Visible = !buildingSelected;
-        Visible = roadSelected || junctionSelected || buildingSelected;
-    }
+		_lanesField.Visible = roadSelected;
+		_speedField.Visible = roadSelected;
+		_signalField.Visible = junctionSelected;
+		_buildingFields.Visible = buildingSelected;
+		_typeIcon.Visible = !buildingSelected;
+		Visible = roadSelected || junctionSelected || buildingSelected;
+	}
 
-    // fills the fields without sending extra draft changes
-    private void LoadBuildingValues(Structure structure)
-    {
-        _updatingControls = true;
-        _buildingType.Select(_buildingType.GetItemIndex((int)structure.Type));
-        _widthInput.Value = structure.SizeInCells.X;
-        _heightInput.Value = structure.SizeInCells.Y;
-        _parkingRowsInput.MaxValue = structure.SizeInCells.Y - 1;
-        _parkingRowsInput.Value = structure.ParkingRows;
-        _updatingControls = false;
-    }
+	// fills the fields without sending extra draft changes
+	private void LoadBuildingValues(Structure structure)
+	{
+		_updatingControls = true;
+		_buildingType.Select(_buildingType.GetItemIndex((int)structure.Type));
+		_widthInput.Value = structure.SizeInCells.X;
+		_heightInput.Value = structure.SizeInCells.Y;
+		_parkingRowsInput.MaxValue = structure.SizeInCells.Y - 1;
+		_parkingRowsInput.Value = structure.ParkingRows;
+		_updatingControls = false;
+	}
 
-    // updates parking details and shows edit buttons only for an existing building
-    public void RefreshDetails()
-    {
-        bool hasSelection = _selectedStructure != null;
-        _applyButton.Visible = hasSelection;
-        _deleteButton.Visible = hasSelection;
-        _newButton.Visible = hasSelection;
+	// updates parking details and shows edit buttons only for an existing building
+	public void RefreshDetails()
+	{
+		bool hasSelection = _selectedStructure != null;
+		_applyButton.Visible = hasSelection;
+		_deleteButton.Visible = hasSelection;
+		_newButton.Visible = hasSelection;
 
-        if (_selectedStructure == null)
-        {
-            var parking = new ParkingLayout(Vector2I.Zero, ChosenSize, ChosenParkingRows, _cellSize, _roadWidth);
-            _detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n" +
-                "Connect a road just below the lot.";
-            return;
-        }
+		if (_selectedStructure == null)
+		{
+			var parking = new ParkingLayout(Vector2I.Zero, ChosenSize, ChosenParkingRows, _cellSize, _roadWidth);
+			_detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n" +
+				"Connect a road just below the lot.";
+			return;
+		}
 
-        string roadAccess = "No road access.";
-        if (_selectedStructure.IsConnected)
-        {
-            roadAccess = $"Road access: {_selectedStructure.AccessCell}";
-        }
+		string roadAccess = "No road access.";
+		if (_selectedStructure.IsConnected)
+		{
+			roadAccess = $"Road access: {_selectedStructure.AccessCell}";
+		}
 
-        _detailsLabel.Text = $"Parking reserved: {_selectedStructure.ReservedCount} / " +
-            $"{_selectedStructure.ParkingCapacity}\n{roadAccess}";
-    }
+		_detailsLabel.Text = $"Parking reserved: {_selectedStructure.ReservedCount} / " +
+			$"{_selectedStructure.ParkingCapacity}\n{roadAccess}";
+	}
 
     // keep lane count between range
     private void SetLanes(int value)
