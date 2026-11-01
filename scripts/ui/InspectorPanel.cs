@@ -4,6 +4,21 @@ using System.Collections.Generic;
 
 public partial class InspectorPanel : Control
 {
+
+    // inspector panel road fields
+    [ExportGroup("Lane Limits")]
+    [Export] public int MinLanes { get; set; } = 1;
+    [Export] public int MaxLanes { get; set; } = 4;
+
+    [ExportGroup("Speed Limits")]
+    [Export] public int MinSpeed { get; set; } = 15;
+    [Export] public int MaxSpeed { get; set; } = 75;
+    [Export] public int SpeedStep{ get; set; } = 5;
+
+    public event Action<int, int> RoadSettingsChanged;
+    public int LanesPerDirection { get; private set; } = 1;
+    public int SpeedLimit { get; private set; } = 35;
+
     public event Action<StructureType, Vector2I, int, int> DraftChanged;
     public event Action ApplyRequested;
     public event Action DeleteRequested;
@@ -13,6 +28,14 @@ public partial class InspectorPanel : Control
     public Vector2I ChosenSize => new Vector2I((int)_widthInput.Value, (int)_heightInput.Value);
     public int ChosenParkingRows => (int)_parkingRowsInput.Value;
     public int ChosenDriverCount => (int)_driverCountInput.Value;
+
+    // roads values and buttons
+    private Label _laneValue;
+    private Label _speedValue;
+    private Button _decreaseLaneButton;
+    private Button _increaseLaneButton;
+    private Button _decreaseSpeedButton;
+    private Button _increaseSpeedButton;
 
     private Control _lanesField;
     private Control _speedField;
@@ -48,13 +71,14 @@ public partial class InspectorPanel : Control
         _roadWidth = roadWidth;
         RefreshDetails();
     }
-    
+
     public override void _Ready()
     {
         FindControls();
         PopulateBuildingTypes();
         LoadBuildingSettings(_buildingDefaults[ChosenType]);
         ConnectEvents();
+        RefreshRoadLabels();
         Visible = false;
     }
 
@@ -83,6 +107,13 @@ public partial class InspectorPanel : Control
         _applyButton = _buildingFields.GetNode<Button>("ApplyButton");
         _newButton = _buildingFields.GetNode<Button>("NewButton");
         _deleteButton = _buildingFields.GetNode<Button>("DeleteButton");
+
+        _laneValue = content.GetNode<Label>("LanesField/HBoxContainer/LaneValue");
+        _speedValue = content.GetNode<Label>("SpeedField/HBoxContainer/SpeedValue");
+        _decreaseLaneButton = content.GetNode<Button>("LanesField/HBoxContainer/DecreaseLaneButton");
+        _increaseLaneButton = content.GetNode<Button>("LanesField/HBoxContainer/IncreaseLaneButton");
+        _decreaseSpeedButton = content.GetNode<Button>("SpeedField/HBoxContainer/DecreaseSpeedButton");
+        _increaseSpeedButton = content.GetNode<Button>("SpeedField/HBoxContainer/IncreaseSpeedButton");
     }
 
     // keep dropdown choices matched to the building types
@@ -117,6 +148,11 @@ public partial class InspectorPanel : Control
         _heightInput.ValueChanged += _ => OnDraftChanged();
         _parkingRowsInput.ValueChanged += _ => OnDraftChanged();
         _driverCountInput.ValueChanged += _ => OnDraftChanged();
+
+        _decreaseLaneButton.Pressed += () => SetLanes(LanesPerDirection - 1);
+        _increaseLaneButton.Pressed += () => SetLanes(LanesPerDirection + 1);
+        _decreaseSpeedButton.Pressed += () => SetSpeed(SpeedLimit - SpeedStep);
+        _increaseSpeedButton.Pressed += () => SetSpeed(SpeedLimit + SpeedStep);
     }
 
     // each building type saves its own settings
@@ -162,9 +198,9 @@ public partial class InspectorPanel : Control
         }
         else
         {
-            _titleLabel.Text = $"Selected: {tool}";
-            _typeLabel.Text = tool.ToString();
-            _subtitleLabel.Text = "";
+            _titleLabel.Text = $"{tool} Tool";
+            _typeLabel.Text = "Drag to place a road";
+            _subtitleLabel.Text = "Shift + Drag to delete";
         }
 
         SetMessage("");
@@ -275,6 +311,45 @@ public partial class InspectorPanel : Control
 
         _detailsLabel.Text = $"Parking reserved: {_selectedStructure.ReservedCount} / " +
             $"{_selectedStructure.ParkingCapacity}\n{roadAccess}";
+    }
+
+    // keep lane count between range
+    private void SetLanes(int value)
+    {
+        value = Mathf.Clamp(value, MinLanes, MaxLanes);
+        if (value == LanesPerDirection)
+        {
+            return;
+        }
+
+        LanesPerDirection = value;
+        OnRoadSettingsChanged();
+    }
+
+    // keep speed limits between range
+    private void SetSpeed(int value)
+    {
+        value = Mathf.Clamp(value, MinSpeed, MaxSpeed);
+        if (value == SpeedLimit)
+        {
+            return;
+        }
+
+        SpeedLimit = value;
+        OnRoadSettingsChanged();
+    }
+
+    // updates inspector road labels
+    private void OnRoadSettingsChanged()
+    {
+        RefreshRoadLabels();
+        RoadSettingsChanged?.Invoke(LanesPerDirection, SpeedLimit);
+    }
+
+    private void RefreshRoadLabels()
+    {
+        _laneValue.Text = LanesPerDirection.ToString();
+        _speedValue.Text = SpeedLimit.ToString();
     }
 
     public void SetMessage(string message) => _messageLabel.Text = message;

@@ -13,7 +13,6 @@ config_version=5
 config/name="Traffic Simulator"
 run/main_scene="uid://irsk2p14klg7"
 config/features=PackedStringArray("4.7", "C#", "Forward Plus")
-config/icon="res://icon.svg"
 
 [display]
 

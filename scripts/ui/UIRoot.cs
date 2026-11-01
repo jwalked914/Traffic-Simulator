@@ -11,9 +11,8 @@ public partial class UIRoot : CanvasLayer
 	private InspectorPanel _inspector;
 	private StructureGraph _structures;
 	private DriverSpawner _drivers;
-	private Button _buildButton;
-	private Button _simulateButton;
-	private Label _simulationStatus;
+	private SimClock _clock;
+	private SimManagerPanel _simulationPanel;
 
 	// connects inspector actions to building edits and placement settings
 	public override void _Ready()
@@ -22,13 +21,12 @@ public partial class UIRoot : CanvasLayer
 		_inspector = GetNode<InspectorPanel>("InspectorPanel");
 		_structures = GetNode<StructureGraph>("../World/StructureGraph");
 		_drivers = GetNode<DriverSpawner>("../World/DriverSpawner");
-		var controls = GetNode<VBoxContainer>("SimulationControls/Content");
-		_buildButton = controls.GetNode<Button>("Controls/BuildButton");
-		_simulateButton = controls.GetNode<Button>("Controls/SimulateButton");
-		_simulationStatus = controls.GetNode<Label>("Status");
-		_simulateButton.Pressed += StartSimulation;
-		_buildButton.Pressed += _drivers.Reset;
+		_clock = GetNode<SimClock>("../World/SimClock");
+		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
+		_simulationPanel.ToggleRequested += StartSimulation;
+		_simulationPanel.StopRequested += StopSimulation;
 		_drivers.StateChanged += RefreshSimulationControls;
+		_clock.StateChanged += RefreshSimulationControls;
 		var roads = GetNode<RoadGraph>("../World/RoadGraph");
 		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
@@ -52,6 +50,9 @@ public partial class UIRoot : CanvasLayer
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;
 		_drivers.StateChanged -= RefreshSimulationControls;
+		_clock.StateChanged -= RefreshSimulationControls;
+		_simulationPanel.ToggleRequested -= StartSimulation;
+		_simulationPanel.StopRequested -= StopSimulation;
 	}
 
 	// clears the old building selection before switching tools
@@ -86,22 +87,34 @@ public partial class UIRoot : CanvasLayer
 			_inspector.SetMessage(error);
 	}
 
+	// starts a run or pauses and resumes the current run
 	private void StartSimulation()
 	{
-		if (!_drivers.TryStart(60, out string error))
+		if (!_drivers.IsRunning)
 		{
-			_simulationStatus.Text = error;
-			_simulationStatus.Show();
+			if (!_drivers.TryStart(60, out string error))
+			{
+				_simulationPanel.SetMessage(error);
+				return;
+			}
+			_clock.Reset();
 		}
+		_clock.Toggle();
+	}
+
+	// clears traffic and returns to build mode
+	private void StopSimulation()
+	{
+		_drivers.Reset();
+		_clock.Reset();
 	}
 
 	// updates the controls for the current simulation state
 	private void RefreshSimulationControls()
 	{
+		if (!IsSimulating && _clock.Running) _clock.Toggle();
+		_drivers.ProcessMode = _clock.Running ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
 		_toolBox.SetDisabled(IsSimulating);
-		_buildButton.SetPressedNoSignal(!IsSimulating);
-		_simulateButton.SetPressedNoSignal(IsSimulating);
-		_simulateButton.Disabled = IsSimulating;
 		if (IsSimulating)
 		{
 			if (CurrentTool != ToolType.None || _structures.Selected != null)
@@ -110,9 +123,7 @@ public partial class UIRoot : CanvasLayer
 			}
 			_inspector.Hide();
 		}
-		_simulationStatus.Hide();
-		_simulateButton.TooltipText = $"Created: {_drivers.SpawnedCount}  |  " +
-			$"Active: {_drivers.ActiveCount}  |  Arrived: {_drivers.ConsumedCount}";
+		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount);
 	}
 
 	private void OnSimMenuItemPressed(long id)

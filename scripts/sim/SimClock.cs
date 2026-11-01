@@ -1,0 +1,60 @@
+using Godot;
+using System;
+
+public partial class SimClock : Node
+{
+    [Export] public double StartHour {get; set;} = 0.0;
+    [Export] public double SimSecondsPerRealSecond { get; set;} = 60.0;
+
+    public double SimTime { get; private set; }
+    public bool Running { get; private set; }
+    public float Speed { get; private set; }  = 1f; // TODO: add some kind of ui element to change this
+
+    public event Action<double> Ticked;
+    public event Action StateChanged;
+
+    public string TimeText
+    {
+        get
+        {
+            int s = (int)(SimTime);
+            return $"{s/3600:00}:{s/ 60 % 60:00}";
+        }
+    }
+    
+    // starts paused at the start hour
+    public override void _Ready() => Reset();
+
+    // advance sim time and tell listeners how much time as elapsed
+    public override void _Process(double delta)
+    {
+        if (!Running) return;
+        double dt = delta * SimSecondsPerRealSecond * Speed;
+        SimTime += dt;
+        Ticked?.Invoke(dt);
+    }
+
+    // starts and stops sim
+    public void Toggle()
+    {
+        Running = !Running;
+        StateChanged?.Invoke();
+    }
+
+    // resets sim time
+    public void Reset()
+    {
+        Running = false;
+        SimTime = StartHour * 3600;
+        StateChanged?.Invoke();
+    }
+
+
+    // sets sim speed
+    /*public void SetSpeed(float speed)
+    {
+        Speed = speed;
+        StateChanged?.Invoke();
+    }*/
+
+}

@@ -1,24 +1,19 @@
 [gd_scene format=3 uid="uid://cx0emgkowrsro"]
 
-[ext_resource type="StyleBox" uid="uid://c8f20gxiqrerj" path="res://ToolBox.tres" id="1_cmxfp"]
-
-[sub_resource type="Theme" id="Theme_jyxc4"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_jyxc4"]
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ptuai"]
-bg_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+[ext_resource type="StyleBox" uid="uid://thjcuokvvjsd" path="res://toolbox_button_normal.tres" id="1_o4rjf"]
+[ext_resource type="StyleBox" uid="uid://bo77mf61ylgh6" path="res://toolbox_button_pressed.tres" id="2_mj2xk"]
+[ext_resource type="StyleBox" uid="uid://8eh80hf2lq4r" path="res://toolbox_button_hover.tres" id="3_ucnv6"]
 
 [node name="SimMenuButton" type="MenuButton" unique_id=1233140219]
 anchors_preset = -1
 anchor_right = 0.065104164
 anchor_bottom = 0.11574074
-theme = SubResource("Theme_jyxc4")
-theme_override_colors/font_color = Color(0.43529412, 0.43529412, 0.43529412, 1)
+offset_right = -49.999992
+offset_bottom = -50.0
 theme_override_font_sizes/font_size = 36
-theme_override_styles/normal = ExtResource("1_cmxfp")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_jyxc4")
-theme_override_styles/hover = SubResource("StyleBoxFlat_ptuai")
+theme_override_styles/normal = ExtResource("1_o4rjf")
+theme_override_styles/pressed = ExtResource("2_mj2xk")
+theme_override_styles/hover = ExtResource("3_ucnv6")
 text = "≡"
 flat = false
 item_count = 3
