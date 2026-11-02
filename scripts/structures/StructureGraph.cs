@@ -17,7 +17,6 @@ public partial class StructureGraph : Node2D
 	[Export] public Texture2D ShopIcon { get; set; }
 	[Export] public Texture2D SchoolIcon { get; set; }
 
-<<<<<<< HEAD
     private RoadGraph _roads;
     private LaneGraph _lanes;
     private UIRoot _ui;
@@ -51,37 +50,6 @@ public partial class StructureGraph : Node2D
     private StyleBoxFlat _invalidPreviewStyle;
     private Font _font;
     private readonly Color _textColor = new Color(0.08f, 0.13f, 0.28f);
-=======
-	private RoadGraph _roads;
-	private LaneGraph _lanes;
-	private UIRoot _ui;
-	private GridView _grid;
-	private readonly List<Structure> _structures = new();
-	public IReadOnlyList<Structure> Structures => _structures.AsReadOnly();
-	public Structure Selected { get; private set; }
-	public StructureType DraftType { get; private set; } = StructureType.House;
-	public Vector2I DraftSize { get; private set; } = new Vector2I(3, 3);
-	public int DraftParkingRows { get; private set; } = 1;
-	public event Action<Structure> SelectionChanged;
-	public event Action StructuresChanged;
-	public event Action<string> PlacementRejected;
-	private bool _showPreview;
-	private Vector2I _hoverCell;
-
-	private StyleBoxFlat _plotStyle;
-	private StyleBoxFlat _houseStyle;
-	private StyleBoxFlat _shopStyle;
-	private StyleBoxFlat _schoolStyle;
-	private StyleBoxFlat _parkingStyle;
-	private StyleBoxFlat _shadowStyle;
-	private StyleBoxFlat _iconSlotStyle;
-	private StyleBoxFlat _reservedSpaceStyle;
-	private StyleBoxFlat _selectionStyle;
-	private StyleBoxFlat _validPreviewStyle;
-	private StyleBoxFlat _invalidPreviewStyle;
-	private Font _font;
-	private readonly Color _textColor = new Color(0.08f, 0.13f, 0.28f);
->>>>>>> inspector-road-settings
 
 	// connects buildings to road changes and various drawing settings
 	public override void _Ready()
@@ -104,7 +72,6 @@ public partial class StructureGraph : Node2D
 		foreach (Structure structure in _structures) structure.ParkingChanged -= Changed;
 	}
 
-<<<<<<< HEAD
     // updates the placement preview
     public void SetDraft(StructureType type, Vector2I size, int parkingRows, int driverCount)
     {
@@ -116,17 +83,6 @@ public partial class StructureGraph : Node2D
         DraftDriverCount = driverCount;
         QueueRedraw();
     }
-=======
-	// updates the placement preview
-	public void SetDraft(StructureType type, Vector2I size, int parkingRows)
-	{
-		if (!Structure.IsValid(type, size, parkingRows)) return;
-		DraftType = type;
-		DraftSize = size;
-		DraftParkingRows = parkingRows;
-		QueueRedraw();
-	}
->>>>>>> inspector-road-settings
 
 	public bool IsCellOccupied(Vector2I cell) =>
 		_structures.Any(structure => structure.Bounds.HasPoint(cell));
@@ -134,7 +90,6 @@ public partial class StructureGraph : Node2D
 	public Structure GetAt(Vector2I cell) =>
 		_structures.FirstOrDefault(structure => structure.Bounds.HasPoint(cell));
 
-<<<<<<< HEAD
     // checks parking room and overlaps, ignoring the building being edited
     public bool CanPlace(Vector2I anchor, StructureType type, Vector2I size, int parkingRows, out string error,
         Structure ignore = null, int rotationSteps = 0)
@@ -208,81 +163,13 @@ public partial class StructureGraph : Node2D
         {
             return false;
         }
-=======
-	// checks parking room and overlaps, ignoring the building being edited
-	public bool CanPlace(Vector2I anchor, StructureType type, Vector2I size, int parkingRows, out string error, Structure ignore = null)
-	{
-		error = "";
-		if (!Structure.IsValid(type, size, parkingRows))
-		{
-			error = "Width must be between 1 and 32, height between 2 and 32.";
-			return false;
-		}
-
-		var parking = new ParkingLayout(anchor, size, parkingRows, _roads.CellSize, _roads.RoadWidth);
-		if (parking.Capacity == 0)
-		{
-			error = "The parking area needs more room for spaces and a driving aisle.";
-			return false;
-		}
-		if (parking.Capacity > ParkingLayout.MaximumCapacity)
-		{
-			error = "Reduce the parking area for this road scale.";
-			return false;
-		}
-
-		Rect2I bounds = new Rect2I(anchor, size);
-		if (_structures.Any(s => s != ignore && s.Bounds.Intersects(bounds)))
-		{
-			error = "That building overlaps another existing building.";
-		}
-		else if (_roads.Segments.Any(s => s.Path.Any(cell => bounds.HasPoint(cell))))
-		{
-			error = "That building overlaps an existing road segment.";
-		}
-		return error.Length == 0;
-	}
-
-	// adds a valid building, creates its parking lanes, and selects it
-	public bool TryPlace(Vector2I anchor, StructureType type, Vector2I size,
-		int parkingRows, out Structure structure, out string error)
-	{
-		structure = null;
-		if (!CanPlace(anchor, type, size, parkingRows, out error)) return false;
-		structure = new Structure(anchor, type, size, parkingRows, _roads.CellSize, _roads.RoadWidth);
-		structure.CreateParkingLanes(_lanes);
-		_structures.Add(structure);
-		structure.ParkingChanged += Changed;
-		ConnectToRoad(structure);
-		Select(structure);
-		Changed();
-		return true;
-	}
-
-	// rebuilds parking only when the layout changes
-	public bool TryEdit(Structure structure, StructureType type, Vector2I size,
-		int parkingRows, out string error)
-	{
-		error = "Select a building first.";
-		if (!_structures.Contains(structure)) return false;
-
-		bool layoutChanged = structure.SizeInCells != size || structure.ParkingRows != parkingRows;
-		if (!CanPlace(structure.AnchorCell, type, size, parkingRows, out error, structure))
-		{
-			return false;
-		}
->>>>>>> inspector-road-settings
 
 		if (layoutChanged)
 		{
 			structure.RemoveParkingLanes(_lanes);
 		}
 
-<<<<<<< HEAD
         structure.Configure(type, size, parkingRows, driverCount);
-=======
-		structure.Configure(type, size, parkingRows);
->>>>>>> inspector-road-settings
 
 		if (layoutChanged)
 		{
@@ -294,7 +181,6 @@ public partial class StructureGraph : Node2D
 		return true;
 	}
 
-<<<<<<< HEAD
     // rotate the placement preview
     public void RotateDraftLeft()
     {
@@ -340,30 +226,6 @@ public partial class StructureGraph : Node2D
         SelectionChanged?.Invoke(structure);
         QueueRedraw();
     }
-=======
-	// removes a building and cleans up its parking connections
-	public bool TryRemove(Structure structure, out string error)
-	{
-		error = "Select a building first.";
-		if (!_structures.Contains(structure)) return false;
-		structure.RemoveParkingLanes(_lanes);
-		structure.ParkingChanged -= Changed;
-		structure.AccessRoad = null;
-		structure.AccessCell = null;
-		_structures.Remove(structure);
-		if (Selected == structure) Select(null);
-		error = "";
-		Changed();
-		return true;
-	}
-
-	public void Select(Structure structure)
-	{
-		Selected = structure;
-		SelectionChanged?.Invoke(structure);
-		QueueRedraw();
-	}
->>>>>>> inspector-road-settings
 
 	// removes whole buildings touched by the deletion box
 	private void DeleteInBounds(Vector2I min, Vector2I max)
@@ -380,7 +242,6 @@ public partial class StructureGraph : Node2D
 		Changed();
 	}
 
-<<<<<<< HEAD
     // connects the entrance to a road on the structure's facing side
     private void ConnectToRoad(Structure structure)
     {
@@ -398,30 +259,10 @@ public partial class StructureGraph : Node2D
                 _lanes.Disconnect(structure.ExitLane.Id, lane.Id);
             }
         }
-=======
-	// replaces old road access with an endpoint just below the parking lot
-	private void ConnectToRoad(Structure structure)
-	{
-		if (structure.AccessRoad != null)
-		{
-			RoadSegment previous = structure.AccessRoad;
-			IEnumerable<Lane> incoming = previous.A == structure.AccessCell ? previous.LanesBtoA : previous.LanesAtoB;
-			IEnumerable<Lane> outgoing = previous.A == structure.AccessCell ? previous.LanesAtoB : previous.LanesBtoA;
-			foreach (Lane lane in incoming)
-			{
-				_lanes.Disconnect(lane.Id, structure.EntryLane.Id);
-			}
-			foreach (Lane lane in outgoing)
-			{
-				_lanes.Disconnect(structure.ExitLane.Id, lane.Id);
-			}
-		}
->>>>>>> inspector-road-settings
 
 		structure.AccessRoad = null;
 		structure.AccessCell = null;
 
-<<<<<<< HEAD
         foreach (Vector2I cell in structure.GetRoadAccessCells())
         {
             RoadSegment road = _roads.Segments.FirstOrDefault(s => s.A == cell || s.B == cell);
@@ -441,29 +282,6 @@ public partial class StructureGraph : Node2D
             return;
         }
     }
-=======
-		int y = structure.AnchorCell.Y + structure.SizeInCells.Y;
-		for (int x = structure.AnchorCell.X; x < structure.Bounds.End.X; x++)
-		{
-			Vector2I cell = new Vector2I(x, y);
-			RoadSegment road = _roads.Segments.FirstOrDefault(s => s.A == cell || s.B == cell);
-			if (road == null) continue;
-			structure.AccessRoad = road;
-			structure.AccessCell = cell;
-			IEnumerable<Lane> incoming = road.A == cell ? road.LanesBtoA : road.LanesAtoB;
-			IEnumerable<Lane> outgoing = road.A == cell ? road.LanesAtoB : road.LanesBtoA;
-			foreach (Lane lane in incoming)
-			{
-				_lanes.Connect(lane.Id, structure.EntryLane.Id);
-			}
-			foreach (Lane lane in outgoing)
-			{
-				_lanes.Connect(structure.ExitLane.Id, lane.Id);
-			}
-			return;
-		}
-	}
->>>>>>> inspector-road-settings
 
 	private void Changed()
 	{
@@ -494,7 +312,6 @@ public partial class StructureGraph : Node2D
 		}
 	}
 
-<<<<<<< HEAD
     // handles building selection, placement, and clearing the selection
     public override void _UnhandledInput(InputEvent @event)
     {
@@ -574,64 +391,6 @@ public partial class StructureGraph : Node2D
         _invalidPreviewStyle = CreateStyle(new Color(1, 0.2f, 0.25f, 0.18f), radius, 3, new Color(0.95f, 0.25f, 0.3f));
         _font = ThemeDB.FallbackFont;
     }
-=======
-	// handles building selection, placement, and clearing the selection
-	public override void _UnhandledInput(InputEvent @event)
-	{
-		if (@event.IsActionPressed("ui_cancel") && Selected != null)
-		{
-			Select(null);
-			GetViewport().SetInputAsHandled();
-			return;
-		}
-		if (@event is not InputEventMouseButton mouse || mouse.ButtonIndex != MouseButton.Left ||
-			!mouse.Pressed || mouse.ShiftPressed || _roads.IsDeleteSelecting) return;
-		if (_ui.CurrentTool != ToolType.Structure && _ui.CurrentTool != ToolType.None) return;
-
-		Vector2I cell = _roads.GlobalToCell(GetGlobalMousePosition());
-		Structure existing = GetAt(cell);
-		if (existing != null) Select(existing);
-		else if (_ui.CurrentTool == ToolType.Structure && Selected == null)
-		{
-			if (!TryPlace(cell, DraftType, DraftSize, DraftParkingRows, out _, out string error))
-				PlacementRejected?.Invoke(error);
-		}
-		else Select(null);
-		GetViewport().SetInputAsHandled();
-	}
-
-	// draws placed buildings and the current placement preview
-	public override void _Draw()
-	{
-		if (_roads == null) return;
-		foreach (Structure structure in _structures)
-			DrawStructure(structure.AnchorCell, structure.Type, structure.SizeInCells,
-				structure.ParkingRows, structure, false);
-		if (_showPreview)
-			DrawStructure(_hoverCell, DraftType, DraftSize, DraftParkingRows, null, true);
-	}
-
-	// creates reusable styles so drawing does not need new ones each time
-	private void CreateStyles()
-	{
-		Color border = new Color(0.97f, 0.99f, 1.0f);
-		int radius = Mathf.Max(1, Mathf.RoundToInt(_roads.CellSize * 0.09f));
-		int roofBorder = Mathf.Max(1, Mathf.RoundToInt(_roads.CellSize * 0.055f));
-
-		_plotStyle = CreateStyle(_grid.BackgroundColor, radius);
-		_houseStyle = CreateStyle(HouseColor, 2, roofBorder, border);
-		_shopStyle = CreateStyle(ShopColor, 2, roofBorder, border);
-		_schoolStyle = CreateStyle(SchoolColor, 2, roofBorder, border);
-		_parkingStyle = CreateStyle(ParkingColor, radius / 2, 2, border);
-		_shadowStyle = CreateStyle(new Color(0.12f, 0.26f, 0.22f, 0.18f), 2);
-		_iconSlotStyle = CreateStyle(new Color(1, 1, 1, 0.22f), radius / 2, 1, new Color(1, 1, 1, 0.45f));
-		_reservedSpaceStyle = CreateStyle(new Color(0.98f, 0.76f, 0.35f), radius / 3);
-		_selectionStyle = CreateStyle(Colors.Transparent, radius, 3, new Color(0.20f, 0.55f, 1));
-		_validPreviewStyle = CreateStyle(new Color(0.1f, 0.75f, 0.35f, 0.12f), radius, 3, new Color(0.1f, 0.7f, 0.35f));
-		_invalidPreviewStyle = CreateStyle(new Color(1, 0.2f, 0.25f, 0.18f), radius, 3, new Color(0.95f, 0.25f, 0.3f));
-		_font = ThemeDB.FallbackFont;
-	}
->>>>>>> inspector-road-settings
 
 	private static StyleBoxFlat CreateStyle(Color color, int radius, int borderWidth = 0, Color borderColor = default)
 	{
@@ -645,7 +404,6 @@ public partial class StructureGraph : Node2D
 		return style;
 	}
 
-<<<<<<< HEAD
     // draws the building and lot together, with a selection or placement outline
     private void DrawStructure(Vector2I anchor, StructureType type, Vector2I size,
         int parkingRows, Structure structure, bool preview)
@@ -686,47 +444,6 @@ public partial class StructureGraph : Node2D
             DrawStyleBox(_selectionStyle, grounds);
         }
     }
-=======
-	// draws the building and lot together, with a selection or placement outline
-	private void DrawStructure(Vector2I anchor, StructureType type, Vector2I size,
-		int parkingRows, Structure structure, bool preview)
-	{
-		float cellSize = _roads.CellSize;
-		Rect2 footprint = _roads.GetMultiCellLocalRect(anchor, size);
-		Rect2 grounds = footprint.Grow(-cellSize * 0.06f);
-		Rect2 buildingArea = _roads.GetMultiCellLocalRect(anchor, new Vector2I(size.X, size.Y - parkingRows));
-		Rect2 roof = new Rect2(
-			buildingArea.Position + new Vector2(cellSize * 0.30f, cellSize * 0.24f),
-			buildingArea.Size - new Vector2(cellSize * 0.60f, cellSize * 0.38f));
-		ParkingLayout parking = structure?.Parking;
-		if (parking == null)
-		{
-			parking = new ParkingLayout(anchor, size, parkingRows, cellSize, _roads.RoadWidth);
-		}
-
-		DrawStyleBox(_plotStyle, grounds);
-		DrawParkingSpaces(parking, structure);
-		DrawWalkway(roof, parking.Lot);
-		DrawBuilding(roof, type);
-		DrawRoadAccess(parking.Lot, structure);
-
-		if (preview)
-		{
-			if (CanPlace(anchor, type, size, parkingRows, out _))
-			{
-				DrawStyleBox(_validPreviewStyle, grounds);
-			}
-			else
-			{
-				DrawStyleBox(_invalidPreviewStyle, grounds);
-			}
-		}
-		else if (structure == Selected)
-		{
-			DrawStyleBox(_selectionStyle, grounds);
-		}
-	}
->>>>>>> inspector-road-settings
 
 	// fits the building's icon slot and label inside its roof
 	private void DrawBuilding(Rect2 roof, StructureType type)
@@ -795,7 +512,6 @@ public partial class StructureGraph : Node2D
 		DrawTextureRect(icon, iconRect, false);
 	}
 
-<<<<<<< HEAD
     // draws a producer or consumer and its tunnel opening
     private void DrawTrafficEndpoint(Vector2I anchor, StructureType type, Structure structure, bool preview)
     {
@@ -850,16 +566,6 @@ public partial class StructureGraph : Node2D
         {
             return;
         }
-=======
-	// paints the lot and spaces, then marks any reserved spaces
-	private void DrawParkingSpaces(ParkingLayout parking, Structure structure)
-	{
-		DrawStyleBox(_parkingStyle, parking.Lot);
-		if (parking.Capacity == 0 || parking.Capacity > ParkingLayout.MaximumCapacity)
-		{
-			return;
-		}
->>>>>>> inspector-road-settings
 
 		Color stripeColor = new Color(0.96f, 0.98f, 1);
 		float stripeWidth = Mathf.Max(1, _roads.RoadWidth * 0.04f);
@@ -891,19 +597,12 @@ public partial class StructureGraph : Node2D
 				continue;
 			}
 
-<<<<<<< HEAD
+
             Vector2 center = parking.GetSpaceRect(i).GetCenter();
             Vector2 markerSize = new Vector2(parking.SpaceSize.X * 0.55f, parking.SpaceSize.Y * 0.70f);
             DrawStyleBox(_reservedSpaceStyle, new Rect2(center - markerSize * 0.5f, markerSize));
         }
     }
-
-=======
-			Vector2 center = structure.GetParkingPosition(i);
-			Vector2 markerSize = new Vector2(parking.SpaceSize.X * 0.55f, parking.SpaceSize.Y * 0.70f);
-			DrawStyleBox(_reservedSpaceStyle, new Rect2(center - markerSize * 0.5f, markerSize));
-		}
-	}
 
 	// joins the building to the lot without covering parking spaces
 	private void DrawWalkway(Rect2 roof, Rect2 lot)
@@ -963,5 +662,4 @@ public partial class StructureGraph : Node2D
 		Changed();
 	}
 
->>>>>>> inspector-road-settings
 }

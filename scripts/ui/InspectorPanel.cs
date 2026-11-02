@@ -214,7 +214,6 @@ public partial class InspectorPanel : Control
 		ShowFieldsForTool(ToolType.Structure);
 		LoadBuildingValues(structure);
 
-<<<<<<< HEAD
         _titleLabel.Text = $"Selected: {structure.Type}";
         _typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
         _subtitleLabel.Text = $"Edit the building · {structure.RotationSteps * 90}° left";
@@ -223,16 +222,6 @@ public partial class InspectorPanel : Control
         DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows, ChosenDriverCount);
         RefreshDetails();
     }
-=======
-		_titleLabel.Text = $"Selected: {structure.Type}";
-		_typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
-		_subtitleLabel.Text = "Edit the building";
-		SetMessage("");
-
-		DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows);
-		RefreshDetails();
-	}
->>>>>>> inspector-road-settings
 
 	// shows only the fields used by the active tool
 	private void ShowFieldsForTool(ToolType tool)
@@ -249,7 +238,6 @@ public partial class InspectorPanel : Control
 		Visible = roadSelected || junctionSelected || buildingSelected;
 	}
 
-<<<<<<< HEAD
     // fills the fields without sending extra draft changes
     private void LoadBuildingValues(Structure structure)
     {
@@ -314,35 +302,6 @@ public partial class InspectorPanel : Control
                 "Connect a road at the lot's entrance.";
             return;
         }
-=======
-	// fills the fields without sending extra draft changes
-	private void LoadBuildingValues(Structure structure)
-	{
-		_updatingControls = true;
-		_buildingType.Select(_buildingType.GetItemIndex((int)structure.Type));
-		_widthInput.Value = structure.SizeInCells.X;
-		_heightInput.Value = structure.SizeInCells.Y;
-		_parkingRowsInput.MaxValue = structure.SizeInCells.Y - 1;
-		_parkingRowsInput.Value = structure.ParkingRows;
-		_updatingControls = false;
-	}
-
-	// updates parking details and shows edit buttons only for an existing building
-	public void RefreshDetails()
-	{
-		bool hasSelection = _selectedStructure != null;
-		_applyButton.Visible = hasSelection;
-		_deleteButton.Visible = hasSelection;
-		_newButton.Visible = hasSelection;
-
-		if (_selectedStructure == null)
-		{
-			var parking = new ParkingLayout(Vector2I.Zero, ChosenSize, ChosenParkingRows, _cellSize, _roadWidth);
-			_detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n" +
-				"Connect a road just below the lot.";
-			return;
-		}
->>>>>>> inspector-road-settings
 
 		string roadAccess = "No road access.";
 		if (_selectedStructure.IsConnected)

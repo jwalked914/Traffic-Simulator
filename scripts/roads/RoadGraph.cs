@@ -316,7 +316,6 @@ public partial class RoadGraph : Node2D
 	public bool TryAddRoad(IReadOnlyList<Vector2I> path, out RoadSegment segment)
 	{
 		segment = null;
-<<<<<<< HEAD
 		if (_roadNetwork == null || _ui.IsSimulating || path == null || path.Count < 2 ||
 			path.Any(cell => _structures.IsCellOccupied(cell))) return false;
 		for (int i = 1; i < path.Count; i++)
@@ -324,10 +323,6 @@ public partial class RoadGraph : Node2D
 			Vector2I difference = path[i] - path[i - 1];
 			if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1) return false;
 		}
-=======
-		if (!CanAddRoad(path, out _)) return false;
-		
->>>>>>> inspector-road-settings
 		segment = _roadNetwork.AddSegment(path);
 		RoadPlaced?.Invoke(segment);
 		NotifyRoadsChanged();

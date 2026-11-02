@@ -4,7 +4,7 @@ public partial class CheckpointTimeline : Control
 {
 	
 	[Export] public double WindowSeconds { get; set; } = 7200;
-	[Export] public Color TrackColor { get; set; } = new Color("FF7B72");
+	[Export] public Color TrackColor { get; set; } = new Color("FFFFFF");
 	[Export] public Color DotColor { get; set; } = new Color("7CE36B");
 	[Export] public Color NowColor {get; set; } = new Color("DDE3E8");
 

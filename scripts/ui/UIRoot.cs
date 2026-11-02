@@ -8,106 +8,47 @@ public partial class UIRoot : CanvasLayer
 	[Export(PropertyHint.File, "*.tscn")]
 	public string MainMenuScene { get; set; } = "res://scenes/MainMenu.tscn";
 	public ToolType CurrentTool { get; private set; } = ToolType.None;
-<<<<<<< HEAD
 	public bool IsSimulating => _drivers != null && _drivers.IsRunning;
+
 	private ToolBox _toolBox;
 	private InspectorPanel _inspector;
 	private StructureGraph _structures;
 	private DriverSpawner _drivers;
 	private SimClock _clock;
 	private SimManagerPanel _simulationPanel;
-=======
-	private ToolBox _toolBox;
-	private InspectorPanel _inspector;
-	private StructureGraph _structures;
 	private ScenarioManager _scenario;
-	
+
 	// save/load dialogs
 	private FileDialog _fileDialog;
 	private ConfirmationDialog _confirmDiscard;
 	private AcceptDialog _messageDialog;
 	private bool _dialogIsSave;
 	private Action _pendingAction;
-	
-	private const string SaveDir = "user://scenarios";
->>>>>>> inspector-road-settings
 
-	// connects inspector actions to building edits and placement settings
+	private const string SaveDir = "user://scenarios";
+
+	// connects inspector actions, simulation controls, and save/load
 	public override void _Ready()
 	{
 		_toolBox = GetNode<ToolBox>("ToolBox");
 		_inspector = GetNode<InspectorPanel>("InspectorPanel");
 		_structures = GetNode<StructureGraph>("../World/StructureGraph");
-<<<<<<< HEAD
 		_drivers = GetNode<DriverSpawner>("../World/DriverSpawner");
 		_clock = GetNode<SimClock>("../World/SimClock");
+		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
 		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
+
 		_simulationPanel.ToggleRequested += StartSimulation;
 		_simulationPanel.StopRequested += StopSimulation;
 		_drivers.StateChanged += RefreshSimulationControls;
 		_clock.StateChanged += RefreshSimulationControls;
+
 		var roads = GetNode<RoadGraph>("../World/RoadGraph");
 		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
-		_toolBox.ToolSelected += OnToolSelected;
-		_inspector.DraftChanged += _structures.SetDraft;
-		_inspector.ApplyRequested += ApplyStructure;
-		_inspector.DeleteRequested += DeleteStructure;
-		_inspector.NewRequested += () => _toolBox.SelectTool(ToolType.Structure);
-		_inspector.CloseRequested += () => _toolBox.SelectTool(ToolType.None);
-		_structures.SelectionChanged += OnStructureSelected;
-		_structures.StructuresChanged += _inspector.RefreshDetails;
-		_structures.PlacementRejected += _inspector.SetMessage;
-		RefreshSimulationControls();
-	}
 
-	// disconnects building updates when leaving the simulator
-	public override void _ExitTree()
-	{
-		if (_structures == null) return;
-		_structures.SelectionChanged -= OnStructureSelected;
-		_structures.StructuresChanged -= _inspector.RefreshDetails;
-		_structures.PlacementRejected -= _inspector.SetMessage;
-		_drivers.StateChanged -= RefreshSimulationControls;
-		_clock.StateChanged -= RefreshSimulationControls;
-		_simulationPanel.ToggleRequested -= StartSimulation;
-		_simulationPanel.StopRequested -= StopSimulation;
-	}
-
-	// clears the old building selection before switching tools
-	private void OnToolSelected(int tool)
-	{
-		if (IsSimulating && tool != (int)ToolType.None) return;
-		CurrentTool = (ToolType)tool;
-		_structures.Select(null);
-		EmitSignal(SignalName.ToolChanged, tool);
-	}
-
-	// shows the selected building or returns to the active tool's settings
-    private void OnStructureSelected(Structure structure)
-    {
-        if (structure == null) _inspector.ShowForTool(CurrentTool);
-        else _inspector.ShowStructure(structure);
-    }
-
-	// applies the inspector's values or shows why the edit was rejected
-	private void ApplyStructure()
-	{
-		if (!_structures.TryEdit(_structures.Selected, _inspector.ChosenType,
-			_inspector.ChosenSize, _inspector.ChosenParkingRows, out string error, _inspector.ChosenDriverCount))
-			_inspector.SetMessage(error);
-		else _inspector.ShowStructure(_structures.Selected);
-	}
-
-=======
-		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
-		var roads = GetNode<RoadGraph>("../World/RoadGraph");
-		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
-				
-		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
-		
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
-		
+
 		_fileDialog = new FileDialog
 		{
 			Access = FileDialog.AccessEnum.Userdata,
@@ -133,20 +74,27 @@ public partial class UIRoot : CanvasLayer
 		_structures.SelectionChanged += OnStructureSelected;
 		_structures.StructuresChanged += _inspector.RefreshDetails;
 		_structures.PlacementRejected += _inspector.SetMessage;
+
+		RefreshSimulationControls();
 	}
 
-	// disconnects building updates when leaving the simulator
+	// disconnects updates when leaving the simulator
 	public override void _ExitTree()
 	{
 		if (_structures == null) return;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;
+		_drivers.StateChanged -= RefreshSimulationControls;
+		_clock.StateChanged -= RefreshSimulationControls;
+		_simulationPanel.ToggleRequested -= StartSimulation;
+		_simulationPanel.StopRequested -= StopSimulation;
 	}
 
 	// clears the old building selection before switching tools
 	private void OnToolSelected(int tool)
 	{
+		if (IsSimulating && tool != (int)ToolType.None) return;
 		CurrentTool = (ToolType)tool;
 		_structures.Select(null);
 		_inspector.ShowForTool(CurrentTool);
@@ -164,19 +112,17 @@ public partial class UIRoot : CanvasLayer
 	private void ApplyStructure()
 	{
 		if (!_structures.TryEdit(_structures.Selected, _inspector.ChosenType,
-			_inspector.ChosenSize, _inspector.ChosenParkingRows, out string error))
+			_inspector.ChosenSize, _inspector.ChosenParkingRows, out string error, _inspector.ChosenDriverCount))
 			_inspector.SetMessage(error);
 		else _inspector.ShowStructure(_structures.Selected);
 	}
 
->>>>>>> inspector-road-settings
 	// removes the selected building or shows why it cannot be removed
 	private void DeleteStructure()
 	{
 		if (!_structures.TryRemove(_structures.Selected, out string error))
 			_inspector.SetMessage(error);
 	}
-<<<<<<< HEAD
 
 	// starts a run or pauses and resumes the current run
 	private void StartSimulation()
@@ -216,17 +162,22 @@ public partial class UIRoot : CanvasLayer
 		}
 		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount);
 	}
-=======
->>>>>>> inspector-road-settings
 
 	private void OnSimMenuItemPressed(long id)
 	{
+		// new, save, save as, and load change the map, so stop the run first
+		if (IsSimulating && id <= 3)
+		{
+			_simulationPanel.SetMessage("Stop the simulation before saving or loading.");
+			return;
+		}
+
 		switch (id)
 		{
 			case 0: // new
 				RunUnlessDirty(NewScenario);
 				break;
-				
+
 			case 1: // save
 				if (_scenario.CurrentPath == null) ShowFileDialog(save: true);
 				else ReportErrors(_scenario.SaveTo(_scenario.CurrentPath));
@@ -251,12 +202,12 @@ public partial class UIRoot : CanvasLayer
 			case 6: // settings?
 				break;
 
-			case 7:	 // close app
+			case 7: // close app
 				GetTree().Quit();
 				break;
 		}
 	}
-	
+
 	private void NewScenario()
 	{
 		_scenario.NewScenario();
