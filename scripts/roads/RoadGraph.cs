@@ -170,7 +170,7 @@ public partial class RoadGraph : Node2D
 	// starts a road or deletion square using the left mouse button
 	public override void _UnhandledInput(InputEvent @event)
 	{
-		if (_roadNetwork == null) return;
+		if (_roadNetwork == null || _ui.IsSimulating) return;
 		if (!_isDraggingRoad && !_isSelectingDelete &&
 			_ui.CurrentTool != ToolType.Road &&
 			!(@event is InputEventMouseButton deleteMouse && deleteMouse.ShiftPressed &&
@@ -281,19 +281,53 @@ public partial class RoadGraph : Node2D
 	}
 
 	// placement validation
+	public bool CanAddRoad(IReadOnlyList<Vector2I> path, out string error)
+	{
+		error = "";
+		
+		if (_roadNetwork == null || path == null || path.Count < 2)
+		{
+			error = "A road needs at least two cells.";
+			return false;
+		}
+		
+		for (int i = 0; i < path.Count; ++i)
+		{
+			if (_structures.IsCellOccupied(path[i]))
+			{
+				error = "Road overlaps a building";
+				return false;
+			}
+			
+			if (i > 0)
+			{
+				Vector2I difference = path[i] - path[i - 1];
+				if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1)
+				{
+					error = "Road cells must be adjacent";
+					return false;
+				}
+			}
+		}
+		
+		return true;
+	}
+	
 	public bool TryAddRoad(IReadOnlyList<Vector2I> path, out RoadSegment segment)
 	{
 		segment = null;
-		if (_roadNetwork == null || path == null || path.Count < 2 ||
+		if (_roadNetwork == null || _ui.IsSimulating || path == null || path.Count < 2 ||
 			path.Any(cell => _structures.IsCellOccupied(cell))) return false;
 		for (int i = 1; i < path.Count; i++)
 		{
 			Vector2I difference = path[i] - path[i - 1];
 			if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1) return false;
 		}
-		segment = _roadNetwork.AddSegment(path);
-		RoadPlaced?.Invoke(segment);
-		RoadsChanged?.Invoke();
+		
+		List<RoadSegment> created = _roadNetwork.AddPath(path);
+		foreach (RoadSegment s in created) RoadPlaced?.Invoke(s);
+		segment = created.FirstOrDefault();
+		NotifyRoadsChanged();
 		QueueRedraw();
 		return true;
 	}
@@ -316,7 +350,30 @@ public partial class RoadGraph : Node2D
 		SetEdgePan(false);
 		QueueRedraw();
 	}
+	
+	private int _batchDepth;
+	private bool _changedWhileBatching;
 
+	public void BeginBatch() => _batchDepth++;
+	
+	public void EndBatch()
+	{
+		if (_batchDepth == 0) return;
+		if (--_batchDepth > 0) return;
+		
+		if (_changedWhileBatching)
+		{
+			_changedWhileBatching = false;
+			RoadsChanged?.Invoke();
+		}
+		QueueRedraw();
+	}
+	
+	private void NotifyRoadsChanged()
+	{
+		if (_batchDepth > 0) _changedWhileBatching = true;
+		else RoadsChanged?.Invoke();
+	}
 	// starts a deletion box at the cell under the cursor
 	private void BeginDeleteSelection()
 	{
@@ -545,9 +602,17 @@ public partial class RoadGraph : Node2D
 
 		if (changed)
 		{
-			RoadsChanged?.Invoke();
+			NotifyRoadsChanged();
 		}
 
+	}
+	
+	public void ClearRoads()
+	{
+		CancelCurrentDrag();
+		_roadNetwork?.Clear();
+		NotifyRoadsChanged();
+		QueueRedraw();
 	}
 
 	// a single cell without a connection is not a road section, therefore don't count it
