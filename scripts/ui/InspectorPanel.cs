@@ -5,64 +5,64 @@ using System.Collections.Generic;
 public partial class InspectorPanel : Control
 {
 
-    // inspector panel road fields
-    [ExportGroup("Lane Limits")]
-    [Export] public int MinLanes { get; set; } = 1;
-    [Export] public int MaxLanes { get; set; } = 4;
+	// inspector panel road fields
+	[ExportGroup("Lane Limits")]
+	[Export] public int MinLanes { get; set; } = 1;
+	[Export] public int MaxLanes { get; set; } = 4;
 
-    [ExportGroup("Speed Limits")]
-    [Export] public int MinSpeed { get; set; } = 15;
-    [Export] public int MaxSpeed { get; set; } = 75;
-    [Export] public int SpeedStep{ get; set; } = 5;
+	[ExportGroup("Speed Limits")]
+	[Export] public int MinSpeed { get; set; } = 15;
+	[Export] public int MaxSpeed { get; set; } = 75;
+	[Export] public int SpeedStep{ get; set; } = 5;
 
-    public event Action<int, int> RoadSettingsChanged;
-    public int LanesPerDirection { get; private set; } = 1;
-    public int SpeedLimit { get; private set; } = 35;
+	public event Action<int, int> RoadSettingsChanged;
+	public int LanesPerDirection { get; private set; } = 1;
+	public int SpeedLimit { get; private set; } = 35;
 
-    public event Action<StructureType, Vector2I, int, int> DraftChanged;
-    public event Action ApplyRequested;
-    public event Action DeleteRequested;
-    public event Action NewRequested;
-    public event Action CloseRequested;
-    public StructureType ChosenType => (StructureType)_buildingType.GetSelectedId();
-    public Vector2I ChosenSize => new Vector2I((int)_widthInput.Value, (int)_heightInput.Value);
-    public int ChosenParkingRows => (int)_parkingRowsInput.Value;
-    public int ChosenDriverCount => (int)_driverCountInput.Value;
+	public event Action<StructureType, Vector2I, int, int> DraftChanged;
+	public event Action ApplyRequested;
+	public event Action DeleteRequested;
+	public event Action NewRequested;
+	public event Action CloseRequested;
+	public StructureType ChosenType => (StructureType)_buildingType.GetSelectedId();
+	public Vector2I ChosenSize => new Vector2I((int)_widthInput.Value, (int)_heightInput.Value);
+	public int ChosenParkingRows => (int)_parkingRowsInput.Value;
+	public int ChosenDriverCount => (int)_driverCountInput.Value;
 
-    // roads values and buttons
-    private Label _laneValue;
-    private Label _speedValue;
-    private Button _decreaseLaneButton;
-    private Button _increaseLaneButton;
-    private Button _decreaseSpeedButton;
-    private Button _increaseSpeedButton;
+	// roads values and buttons
+	private Label _laneValue;
+	private Label _speedValue;
+	private Button _decreaseLaneButton;
+	private Button _increaseLaneButton;
+	private Button _decreaseSpeedButton;
+	private Button _increaseSpeedButton;
 
-    private Control _lanesField;
-    private Control _speedField;
-    private Control _signalField;
-    private VBoxContainer _buildingFields;
-    private Control _typeIcon;
-    private Label _titleLabel;
-    private Label _typeLabel;
-    private Label _subtitleLabel;
-    private Label _detailsLabel;
-    private Label _messageLabel;
-    private OptionButton _buildingType;
-    private SpinBox _widthInput;
-    private SpinBox _heightInput;
-    private SpinBox _parkingRowsInput;
-    private SpinBox _driverCountInput;
-    private Control _driverCountField;
-    private Label _driverCountLabel;
-    private readonly Dictionary<StructureType, (Vector2I Size, int ParkingRows, int DriverCount)> _buildingDefaults = new();
-    private Button _closeButton;
-    private Button _applyButton;
-    private Button _deleteButton;
-    private Button _newButton;
-    private Structure _selectedStructure;
-    private bool _updatingControls;
-    private float _cellSize = 128.0f;
-    private float _roadWidth = 32.0f;
+	private Control _lanesField;
+	private Control _speedField;
+	private Control _signalField;
+	private VBoxContainer _buildingFields;
+	private Control _typeIcon;
+	private Label _titleLabel;
+	private Label _typeLabel;
+	private Label _subtitleLabel;
+	private Label _detailsLabel;
+	private Label _messageLabel;
+	private OptionButton _buildingType;
+	private SpinBox _widthInput;
+	private SpinBox _heightInput;
+	private SpinBox _parkingRowsInput;
+	private SpinBox _driverCountInput;
+	private Control _driverCountField;
+	private Label _driverCountLabel;
+	private readonly Dictionary<StructureType, (Vector2I Size, int ParkingRows, int DriverCount)> _buildingDefaults = new();
+	private Button _closeButton;
+	private Button _applyButton;
+	private Button _deleteButton;
+	private Button _newButton;
+	private Structure _selectedStructure;
+	private bool _updatingControls;
+	private float _cellSize = 128.0f;
+	private float _roadWidth = 32.0f;
 
 	// uses the road's scale when showing parking capacity
     public void SetParkingScale(float cellSize, float roadWidth)
@@ -214,14 +214,14 @@ public partial class InspectorPanel : Control
 		ShowFieldsForTool(ToolType.Structure);
 		LoadBuildingValues(structure);
 
-        _titleLabel.Text = $"Selected: {structure.Type}";
-        _typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
-        _subtitleLabel.Text = $"Edit the building · {structure.RotationSteps * 90}° left";
-        SetMessage("");
+		_titleLabel.Text = $"Selected: {structure.Type}";
+		_typeLabel.Text = $"Grid ({structure.AnchorCell.X}, {structure.AnchorCell.Y})";
+		_subtitleLabel.Text = $"Edit the building · {structure.RotationSteps * 90}° left";
+		SetMessage("");
 
-        DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows, ChosenDriverCount);
-        RefreshDetails();
-    }
+		DraftChanged?.Invoke(ChosenType, ChosenSize, ChosenParkingRows, ChosenDriverCount);
+		RefreshDetails();
+	}
 
 	// shows only the fields used by the active tool
 	private void ShowFieldsForTool(ToolType tool)
@@ -238,39 +238,39 @@ public partial class InspectorPanel : Control
 		Visible = roadSelected || junctionSelected || buildingSelected;
 	}
 
-    // fills the fields without sending extra draft changes
-    private void LoadBuildingValues(Structure structure)
-    {
-        _buildingType.Select(_buildingType.GetItemIndex((int)structure.Type));
-        LoadBuildingSettings((structure.SizeInCells, structure.ParkingRows, structure.DriverCount));
-    }
+	// fills the fields without sending extra draft changes
+	private void LoadBuildingValues(Structure structure)
+	{
+		_buildingType.Select(_buildingType.GetItemIndex((int)structure.Type));
+		LoadBuildingSettings((structure.SizeInCells, structure.ParkingRows, structure.DriverCount));
+	}
 
-    private void LoadBuildingSettings((Vector2I Size, int ParkingRows, int DriverCount) settings)
-    {
-        _updatingControls = true;
-        bool endpoint = Structure.IsTrafficEndpoint(ChosenType);
-        bool parking = Structure.HasParking(ChosenType);
-        _heightInput.MinValue = parking ? 2 : 1;
-        _parkingRowsInput.MinValue = parking ? 1 : 0;
-        _widthInput.Value = settings.Size.X;
-        _heightInput.Value = settings.Size.Y;
-        _parkingRowsInput.MaxValue = parking ? settings.Size.Y - 1 : 0;
-        _parkingRowsInput.Value = settings.ParkingRows;
-        _widthInput.Visible = !endpoint;
-        _heightInput.Visible = !endpoint;
-        _parkingRowsInput.Visible = parking;
-        _buildingFields.GetNode<Control>("WidthLabel").Visible = !endpoint;
-        _buildingFields.GetNode<Control>("HeightLabel").Visible = !endpoint;
-        _buildingFields.GetNode<Control>("ParkingRowsLabel").Visible = parking;
-        int driverLimit = Structure.GetDriverLimit(ChosenType);
-        _driverCountField.Visible = driverLimit > 0;
-        _driverCountInput.MaxValue = driverLimit;
-        _driverCountInput.Value = settings.DriverCount;
-        _driverCountLabel.Text = ChosenType == StructureType.House ? "Resident drivers (0–4)" : "Total drivers per run";
-        _updatingControls = false;
-    }
+	private void LoadBuildingSettings((Vector2I Size, int ParkingRows, int DriverCount) settings)
+	{
+		_updatingControls = true;
+		bool endpoint = Structure.IsTrafficEndpoint(ChosenType);
+		bool parking = Structure.HasParking(ChosenType);
+		_heightInput.MinValue = parking ? 2 : 1;
+		_parkingRowsInput.MinValue = parking ? 1 : 0;
+		_widthInput.Value = settings.Size.X;
+		_heightInput.Value = settings.Size.Y;
+		_parkingRowsInput.MaxValue = parking ? settings.Size.Y - 1 : 0;
+		_parkingRowsInput.Value = settings.ParkingRows;
+		_widthInput.Visible = !endpoint;
+		_heightInput.Visible = !endpoint;
+		_parkingRowsInput.Visible = parking;
+		_buildingFields.GetNode<Control>("WidthLabel").Visible = !endpoint;
+		_buildingFields.GetNode<Control>("HeightLabel").Visible = !endpoint;
+		_buildingFields.GetNode<Control>("ParkingRowsLabel").Visible = parking;
+		int driverLimit = Structure.GetDriverLimit(ChosenType);
+		_driverCountField.Visible = driverLimit > 0;
+		_driverCountInput.MaxValue = driverLimit;
+		_driverCountInput.Value = settings.DriverCount;
+		_driverCountLabel.Text = ChosenType == StructureType.House ? "Resident drivers (0–4)" : "Total drivers per run";
+		_updatingControls = false;
+	}
 
-    // updates the structure's details and edit buttons
+	// updates the structure's details and edit buttons
     public void RefreshDetails()
     {
         bool hasSelection = _selectedStructure != null;
@@ -282,15 +282,15 @@ public partial class InspectorPanel : Control
         {
             _detailsLabel.Text = _selectedStructure?.IsConnected == true
                 ? $"Road access: {_selectedStructure.AccessCell}"
-                : "Connect a road at the endpoint's facing edge.";
+				: "Connect a road at the endpoint's facing edge.";
             return;
         }
 
         if (ChosenType == StructureType.House)
         {
             string access = _selectedStructure?.IsConnected == true
-                ? $"Road access: {_selectedStructure.AccessCell}"
-                : "Connect a road next to the house's front edge.";
+				? $"Road access: {_selectedStructure.AccessCell}"
+				: "Connect a road next to the house's front edge.";
             _detailsLabel.Text = access + "TODO";
             return;
         }
@@ -299,7 +299,7 @@ public partial class InspectorPanel : Control
         {
             var parking = new ParkingLayout(Vector2I.Zero, ChosenSize, ChosenParkingRows, _cellSize, _roadWidth);
             _detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n" +
-                "Connect a road at the lot's entrance.";
+				"Connect a road at the lot's entrance.";
             return;
         }
 

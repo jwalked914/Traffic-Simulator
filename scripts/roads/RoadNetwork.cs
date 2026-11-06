@@ -60,6 +60,69 @@ public class RoadNetwork
 		
 		return segment;
 	}
+	
+	// Adds a dragged path, splitting existing segments and the new path wherever they meet.
+	public List<RoadSegment> AddPath(IReadOnlyList<Vector2I> path)
+	{
+		var created = new List<RoadSegment>();
+		if (path.Count < 2) return created;
+		
+		// 1 classify edges as old or new
+		var edgeIsNew = new bool[path.Count - 1];
+		for (int i = 0; i < edgeIsNew.Length; ++i)
+		{
+			edgeIsNew[i] = !EdgeExists(path[i], path[i + 1]);
+		}
+		
+		// 2 split existing segments at overlap point only where new path diverges
+		for (int i = 0; i < path.Count; ++i)
+		{
+			bool touchesNewEdge = (i > 0 && edgeIsNew[i - 1]) || (i < edgeIsNew.Length && edgeIsNew[i]);
+			if (touchesNewEdge)
+			{
+				SplitSegmentsAt(path[i]);
+			}
+		}
+		
+		// 3 split new path segments at endpoints
+		var pieces = new List<List<Vector2I>>();
+		var current = new List<Vector2I> {path[0]};
+		for (int i = 1; i < path.Count; ++i)
+		{
+			current.Add(path[i]);
+			if (i < path.Count - 1 && IsSegmentEndpoint(path[i]))
+			{
+				pieces.Add(current);
+				current = new List<Vector2I> {path[i]};
+			}
+		}
+		pieces.Add(current);
+		
+		// 4 add each piece, skipping overlapping segments
+		foreach (List<Vector2I> piece in pieces)
+		{
+			if (!EdgeExists(piece[0], piece[1]))
+				created.Add(AddSegment(piece));
+		}
+		return created;
+	}
+	
+	private bool EdgeExists(Vector2I a, Vector2I b)
+	{
+		foreach (RoadSegment s in _segments)
+		{
+			for (int i = 1; i < s.Path.Count; i++)
+			{
+				if ((s.Path[i - 1] == a && s.Path[i] == b) ||
+					(s.Path[i - 1] == b && s.Path[i] == a))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
 
 	public void RemoveSegment(RoadSegment segment)
 	{
@@ -75,6 +138,42 @@ public class RoadNetwork
 
 		RemoveSegmentLanesFromJunction(segment, segment.A);
 		RemoveSegmentLanesFromJunction(segment, segment.B);
+	}
+	
+	private bool IsSegmentEndpoint(Vector2I cell)
+	{
+		return _segments.Any(s => s.A == cell || s.B == cell);
+	}
+	
+	private bool SegmentExistsBetween(Vector2I a, Vector2I b)
+	{
+		return _segments.Any(s => s.Path.Count == 2 &&
+			((s.A == a && s.B == b) || (s.A == b && s.B == a)));
+	}
+	
+	private void SplitSegmentsAt(Vector2I cell)
+	{
+		foreach (RoadSegment segment in _segments.ToList())
+		{
+			int index = -1;
+			for (int i = 1; i < segment.Path.Count - 1; ++i)
+			{
+				if (segment.Path[i] == cell) 
+				{
+					index = i;
+					break;
+				}
+			}
+			if (index < 0) continue;
+			
+			var first = segment.Path.Take(index + 1).ToList();
+			var second = segment.Path.Skip(index).ToList();
+			
+			RemoveSegment(segment);
+			AddSegment(first);
+			AddSegment(second);
+			return;
+		}
 	}
 	
 	public void Clear()

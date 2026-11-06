@@ -323,8 +323,10 @@ public partial class RoadGraph : Node2D
 			Vector2I difference = path[i] - path[i - 1];
 			if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1) return false;
 		}
-		segment = _roadNetwork.AddSegment(path);
-		RoadPlaced?.Invoke(segment);
+		
+		List<RoadSegment> created = _roadNetwork.AddPath(path);
+		foreach (RoadSegment s in created) RoadPlaced?.Invoke(s);
+		segment = created.FirstOrDefault();
 		NotifyRoadsChanged();
 		QueueRedraw();
 		return true;
