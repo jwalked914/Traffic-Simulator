@@ -57,10 +57,9 @@ public partial class ScenarioManager : Node
 		{
 			data.Structures.Add(new StructureData
 			{
-				Anchor = new[] {s.AnchorCell.X, s.AnchorCell.Y},
+				Anchor = s.AnchorCell,
 				Type = s.Type,
-				Size = new[] {s.SizeInCells.X, s.SizeInCells.Y},
-				ParkingRows = s.ParkingRows
+				Props = PropSerializer.Write(s)
 			});
 		}
 		return data;
@@ -110,27 +109,24 @@ public partial class ScenarioManager : Node
 		for (int i = 0; i < data.Structures.Count; ++i)
 		{
 			StructureData s = data.Structures[i];
-			if (!TryCell(s.Anchor, offset, out Vector2I anchor) || !TryCell(s.Size, Vector2I.Zero, out Vector2I size))
-			{
-				result.Errors.Add($"Structure {i}: bad anchor or size.");
-				continue;
-			}
+			Vector2I anchor = s.Anchor + offset;
 			
+			Structure structure;
 			try 
 			{
-				_ = new Structure(anchor, s.Type, size, s.ParkingRows, _roads.CellSize, _roads.RoadWidth);
-			} catch (System.ArgumentException e)
+				structure = new Structure(anchor, s.Type, s.Props, _roads.CellSize, _roads.RoadWidth);
+			} catch (ArgumentException e)
 			{
 				result.Errors.Add($"Structure {i}: {e.Message}");
 				continue;
 			}
 			
-			var rect = new Rect2I(anchor, size);
+			Rect2I rect = structure.Bounds;
 			if (bounds.Any(b => b.Intersects(rect))) result.Errors.Add($"Structure {i}: overlaps another imported building.");
 			if (roadCells.Any(c => rect.HasPoint(c))) result.Errors.Add($"Structure {i}: overlaps an imported road.");
 			bounds.Add(rect);
 			
-			if (checkLiveWorld && !_structures.CanPlace(anchor, s.Type, size, s.ParkingRows, out string err))
+			if (checkLiveWorld && !_structures.CanPlace(structure, out string err))
 				result.Errors.Add($"Structure {i}: {err}");
 		}
 		return result;
@@ -150,10 +146,21 @@ public partial class ScenarioManager : Node
 			}
 			foreach (StructureData s in data.Structures)
 			{
-				var anchor = new Vector2I(s.Anchor[0], s.Anchor[1]) + offset;
-				var size = new Vector2I (s.Size[0], s.Size[1]);
-				if (!_structures.TryPlace(anchor, s.Type, size, s.ParkingRows, out _, out string e))
-					result.Errors.Add(e);
+				Vector2I anchor = s.Anchor + offset;
+				
+				Structure structure;
+				try
+				{
+					structure = new Structure(anchor, s.Type, s.Props, _roads.CellSize, _roads.RoadWidth);
+				}
+				catch (ArgumentException e)
+				{
+					result.Errors.Add(e.Message);
+					continue;
+				}
+				
+				if (!_structures.TryPlace(structure, out _, out string error))
+					result.Errors.Add(error);
 			} 
 		}
 		finally

@@ -132,6 +132,13 @@ public partial class StructureGraph : Node2D
 		}
 		return error.Length == 0;
 	}
+	
+	// overload for simpler function calling
+	public bool CanPlace(Structure structure, out string error, Structure ignore = null)
+	{
+		return CanPlace(structure.AnchorCell, structure.Type, structure.SizeInCells,
+			structure.ParkingRows, out error, ignore, structure.RotationSteps);
+	}
 
 	// adds a valid structure and connects its road access
 	public bool TryPlace(Vector2I anchor, StructureType type, Vector2I size,
@@ -179,6 +186,13 @@ public partial class StructureGraph : Node2D
 
 		Changed();
 		return true;
+	}
+	
+	// overload for simpler function calling
+	public bool TryPlace(Structure structure, out Structure placed, out string error)
+	{
+		return TryPlace(structure.AnchorCell, structure.Type, structure.SizeInCells,
+			structure.ParkingRows, out placed, out error, structure.DriverCount, structure.RotationSteps);
 	}
 
 	// rotate the placement preview

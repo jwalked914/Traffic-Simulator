@@ -1,5 +1,6 @@
 using Godot;
 using System.Collections.Generic;
+using System.Text.Json;
 
 public class ScenarioData
 {
@@ -17,10 +18,9 @@ public class RoadData
 
 public class StructureData
 {
-	public int[] Anchor {get; set;}
+	public Vector2I Anchor {get; set;}
 	public StructureType Type {get; set;}
-	public int[] Size {get; set;}
-	public int ParkingRows {get; set;}
+	public Dictionary<string, JsonElement> Props { get; set; } = new();
 }
 
 public class ImportResult

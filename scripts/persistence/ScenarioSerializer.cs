@@ -7,10 +7,10 @@ public static class ScenarioSerializer
 {
 	public const int CurrentVersion = 1;
 
-	private static readonly JsonSerializerOptions Options = new()
+	internal static readonly JsonSerializerOptions Options = new()
 	{
 		WriteIndented = true,
-		Converters = { new JsonStringEnumConverter() }
+		Converters = { new JsonStringEnumConverter(), new Vector2IConverter() }
 	};
 
 	public static string ToJson(ScenarioData data) => JsonSerializer.Serialize(data, Options);

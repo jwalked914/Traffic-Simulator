@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 
 public enum StructureType
 {
@@ -16,10 +17,10 @@ public class Structure
 {
 	public Vector2I AnchorCell { get; }
 	public StructureType Type { get; private set; }
-	public Vector2I SizeInCells { get; private set; }
-	public int ParkingRows { get; private set; }
-	public int DriverCount { get; private set; }
-	public int RotationSteps { get; }
+	[Persist] public Vector2I SizeInCells { get; private set; }
+	[Persist] public int ParkingRows { get; private set; }
+	[Persist] public int DriverCount { get; private set; }
+	[Persist] public int RotationSteps { get; private set; }
 	public Vector2I FootprintSize => GetFootprintSize(SizeInCells, RotationSteps);
 	public Rect2I Bounds => new Rect2I(AnchorCell, FootprintSize);
 	public ParkingLayout Parking { get; private set; }
@@ -51,6 +52,22 @@ public class Structure
 		_cellSize = cellSize;
 		_roadWidth = roadWidth;
 		Configure(type, size, parkingRows, driverCount);
+	}
+	
+	public Structure(Vector2I anchor, StructureType type, Dictionary<string, JsonElement> props,
+		float cellSize, float roadWidth)
+	{
+		AnchorCell = anchor;
+		_cellSize = cellSize;
+		_roadWidth = roadWidth;
+		
+		List<string> errors = PropSerializer.Read(this, props);
+		if (errors.Count > 0) throw new ArgumentException(string.Join("; ", errors));
+		
+		if (RotationSteps < 0 || RotationSteps > 3) 
+			throw new ArgumentOutOfRangeException(nameof(props), "RotationSteps must be 0 to 3.");
+		
+		Configure(type, SizeInCells, ParkingRows, DriverCount);
 	}
 
 	public static int GetDriverLimit(StructureType type) => type switch
