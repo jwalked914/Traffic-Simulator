@@ -37,15 +37,15 @@ public partial class Driver : Node2D
         switch (Personality)
         {
             case DriverPersonality.Cautious:
-                Speed = 30.0f;
+                Speed = 80.0f;
                 break;
 
             case DriverPersonality.Normal:
-                Speed = 50.0f;
+                Speed = 120.0f;
                 break;
 
             case DriverPersonality.Aggressive:
-                Speed = 75.0f;
+                Speed = 160.0f;
                 break;
         }
     }
@@ -125,6 +125,61 @@ public partial class Driver : Node2D
 
     // The next waypoint the driver is going to
     private int _currentWaypoint = 0;
+
+    //other Drivers currently in the simulation
+    private IEnumerable<Driver> _otherDrivers;
+
+    private const float SafeFollowDistance = 32.0f;
+    private const float DetectionDistance = 70.0f;
+    private const float LaneDetectionWidth = 10.0f;
+
+    public void SetOtherDrivers(IEnumerable<Driver> drivers)
+    {
+        _otherDrivers = drivers;
+    }
+
+    private float GetMovementSpeed(Vector2 direction)
+    {
+        float movementSpeed = Speed;
+        if (_otherDrivers == null)
+        {
+            return movementSpeed;
+        }
+
+        Vector2 sideDirection = new Vector2(-direction.Y, direction.X);
+
+        foreach (Driver other in _otherDrivers)
+        {
+            //prevent checking itself
+            if(other == this || !other.IsMoving)
+            {
+                continue;
+            }
+
+            Vector2 difference = other.GlobalPosition - GlobalPosition;
+
+            // distance ahead of driver
+            float distanceAhead = difference.Dot(direction);
+            //distance between the lanes
+            float sideDistance = Mathf.Abs(difference.Dot(sideDirection));
+
+            // only check cars in same lane
+            if (distanceAhead > 0 && distanceAhead < DetectionDistance && sideDistance < LaneDetectionWidth)
+            {
+                if (distanceAhead <= SafeFollowDistance)
+                {
+                    return 0.0f;
+                }
+
+                // slow down when approaching another car
+                float speedFactor = Mathf.Clamp((distanceAhead - SafeFollowDistance) / (DetectionDistance - SafeFollowDistance), 0.0f, 1.0f);
+
+                movementSpeed = Mathf.Min(movementSpeed, Speed * speedFactor);
+
+            }
+        }
+        return movementSpeed;
+    }
 
     // true when route to follow
     public bool IsMoving { get; private set; } = false;
@@ -246,8 +301,11 @@ public partial class Driver : Node2D
         // face forward to route
         Rotation = direction.Angle();
 
-        // move to next point.
-        float distance = Speed * (float)delta;
+        //check for othe cars
+        float movementSpeed = GetMovementSpeed(direction.Normalized());
+
+        // move to next point with adjusted speed
+        float distance = movementSpeed * (float)delta;
 
         GlobalPosition = GlobalPosition.MoveToward(
             target,
