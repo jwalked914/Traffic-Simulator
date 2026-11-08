@@ -133,6 +133,10 @@ public partial class Driver : Node2D
     private const float DetectionDistance = 70.0f;
     private const float LaneDetectionWidth = 10.0f;
 
+    //distance for cars crossing directions
+    private const float IntersectionConflictDistance = 36.0f;
+
+
     public void SetOtherDrivers(IEnumerable<Driver> drivers)
     {
         _otherDrivers = drivers;
@@ -157,6 +161,30 @@ public partial class Driver : Node2D
             }
 
             Vector2 difference = other.GlobalPosition - GlobalPosition;
+
+            float distance = difference.Length();
+
+            //get other car direction
+            Vector2 otherDirection = new Vector2(Mathf.Cos(other.Rotation), Mathf.Sin(other.Rotation));
+
+            //check if traveling in different directions
+            float directionDot = Mathf.Abs(direction.Dot(otherDirection));
+
+            bool directionCross = directionDot < 0.866f;
+
+            //handle cars in deadlock crossing
+            if (directionCross && distance < IntersectionConflictDistance)
+            {
+                //lower driver id gets temp priority
+                if (DriverId < other.DriverId)
+                {
+                    continue;
+                }
+                else
+                {
+                    return 0.0f;
+                }
+            }
 
             // distance ahead of driver
             float distanceAhead = difference.Dot(direction);
