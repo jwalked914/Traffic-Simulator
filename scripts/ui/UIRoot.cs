@@ -162,6 +162,7 @@ public partial class UIRoot : CanvasLayer
 		if (!IsSimulating && _clock.Running) _clock.Toggle();
 		_drivers.ProcessMode = _clock.Running ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
 		_toolBox.SetDisabled(IsSimulating);
+		_toolBox.Visible = !IsSimulating;
 		if (IsSimulating)
 		{
 			if (CurrentTool != ToolType.None || _structures.Selected != null)

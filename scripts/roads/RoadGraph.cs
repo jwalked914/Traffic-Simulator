@@ -36,6 +36,11 @@ public partial class RoadGraph : Node2D
 	private Vector2I _deleteStartCell;
 	private Vector2I _deleteEndCell;
 
+	private Vector2I _eraseHoverCell;
+	private bool _showEraseHover;
+	private bool _isErasing;
+	private Vector2I _lastErasedCell;
+
 	public IReadOnlyList<RoadSegment> Segments => _roadNetwork?.Segments ?? Array.Empty<RoadSegment>();
 	public bool IsDeleteSelecting => _isSelectingDelete;
 
@@ -135,6 +140,19 @@ public partial class RoadGraph : Node2D
 	// updates whichever drag is currently active
 	public override void _Process(double delta)
 	{
+		UpdateEraseHover();
+		if(_isErasing)
+		{
+			if (!Input.IsMouseButtonPressed(MouseButton.Left))
+			{
+				FinishErase();
+				return;
+			}
+
+			ContinueErase(GlobalToCell(GetGlobalMousePosition()));
+			return;
+		}
+
 		if (!_isDraggingRoad && !_isSelectingDelete)
 		{
 			return;
@@ -172,7 +190,7 @@ public partial class RoadGraph : Node2D
 	{
 		if (_roadNetwork == null || _ui.IsSimulating) return;
 		if (!_isDraggingRoad && !_isSelectingDelete &&
-			_ui.CurrentTool != ToolType.Road &&
+			_ui.CurrentTool != ToolType.Road && _ui.CurrentTool != ToolType.Erase &&
 			!(@event is InputEventMouseButton deleteMouse && deleteMouse.ShiftPressed &&
 				deleteMouse.ButtonIndex == MouseButton.Left && deleteMouse.Pressed))
 			return;
@@ -186,11 +204,19 @@ public partial class RoadGraph : Node2D
 					{
 						BeginDeleteSelection();
 					}
+					else if(_ui.CurrentTool == ToolType.Erase)
+					{
+						BeginErase();
+					}
 					else
 					{
 						BeginRoadDrag();
 					}
 				}
+			}
+			else if (_isErasing)
+			{
+				FinishErase();
 			}
 			else if (_isSelectingDelete)
 			{
@@ -420,6 +446,7 @@ public partial class RoadGraph : Node2D
 	// escape discards the active drag 
 	private void CancelCurrentDrag()
 	{
+		FinishErase();
 		_draggedCells.Clear();
 		_isDraggingRoad = false;
 		_isSelectingDelete = false;
@@ -452,6 +479,7 @@ public partial class RoadGraph : Node2D
 		}
 
 		DrawDeleteSelection();
+		DrawEraseHover();
 	}
 
 	private void DrawCommittedRoads(float roadWidth)
@@ -529,17 +557,8 @@ public partial class RoadGraph : Node2D
 		}
 
 		GetDeleteBounds(out Vector2I minCell, out Vector2I maxCell);
-
-		Rect2 selectionRect = new Rect2(CellToLocal(minCell), new Vector2((maxCell.X - minCell.X + 1) * CellSize, (maxCell.Y - minCell.Y + 1) * CellSize));
-		float canvasScale = GetGlobalTransformWithCanvas().X.Length();
-		float inset = canvasScale > 0.0f ? DeleteInset / canvasScale : DeleteInset;
-		float outlineWidth = canvasScale > 0.0f ? DeleteOutlineWidth / canvasScale : DeleteOutlineWidth;
-
-		inset = Mathf.Min(inset, CellSize * 0.25f);
-		selectionRect = selectionRect.Grow(-inset);
-
-		DrawRect(selectionRect, DeleteFillColor);
-		DrawRect(selectionRect, DeleteOutlineColor, false, outlineWidth, true);
+		DrawDeleteRect(new Rect2(CellToLocal(minCell),
+			new Vector2((maxCell.X - minCell.X + 1) * CellSize, (maxCell.Y - minCell.Y + 1) * CellSize)));
 	}
 
 	// finds the cells covered by the deletion box
@@ -641,4 +660,107 @@ public partial class RoadGraph : Node2D
 
 		GD.Print("Cell conversion passed successfully.");
 	}
+
+	// tracks the cell under the cursor while erasing so it can be highlighted
+	private void UpdateEraseHover()
+	{
+		bool show = _ui.CurrentTool == ToolType.Erase && !_ui.IsSimulating &&
+			GetViewport().GuiGetHoveredControl() == null;
+		Vector2I cell = GlobalToCell(GetGlobalMousePosition());
+
+		if (show == _showEraseHover && cell == _eraseHoverCell)
+		{
+			return;
+		}
+
+		_showEraseHover = show;
+		_eraseHoverCell = cell;
+		QueueRedraw();
+	}
+
+	private void DrawDeleteRect(Rect2 area)
+	{
+		float canvasScale = GetGlobalTransformWithCanvas().X.Length();
+		float inset = canvasScale > 0.0f ? DeleteInset / canvasScale  : DeleteInset;
+		float outlineWidth = canvasScale >0.0f ? DeleteOutlineWidth / canvasScale : DeleteOutlineWidth;
+
+		inset = Mathf.Min(inset, CellSize * 0.25f);
+		area  = area.Grow(-inset);
+
+		DrawRect(area, DeleteFillColor);
+		DrawRect(area, DeleteOutlineColor, false, outlineWidth, true);
+	}
+
+	// highlights what a click with the erase tool will remove
+	private void DrawEraseHover()
+	{
+		if (!_showEraseHover)
+		{
+			return;
+		}
+
+		// building deletion
+		Structure building = _structures.GetAt(_eraseHoverCell);
+		Rect2 area = building != null
+			? GetMultiCellLocalRect(building.Bounds.Position, building.Bounds.Size)
+			: GetCellLocalRect(_eraseHoverCell);
+
+		
+		DrawDeleteRect(area);
+	}
+
+	// starts erasing and removes cell under the cursor
+	private void BeginErase()
+	{
+		_isErasing = true;
+		BeginBatch();
+		SetEdgePan(true);
+
+		_lastErasedCell = GlobalToCell(GetGlobalMousePosition());
+		EraseCell(_lastErasedCell);
+	}
+
+	// erases every cell between the last one and the cursor
+	private void ContinueErase(Vector2I targetCell)
+	{
+		while (_lastErasedCell != targetCell)
+		{
+			Vector2I difference = targetCell - _lastErasedCell;
+
+			if (Math.Abs(difference.X) >= Math.Abs(difference.Y) && difference.X != 0)
+			{
+				_lastErasedCell += new Vector2I(Math.Sign(difference.X), 0);
+			}
+			else
+			{
+				_lastErasedCell += new Vector2I(0, Math.Sign(difference.Y));
+			}
+
+			EraseCell(_lastErasedCell);
+		}
+	}
+
+	// remove a cell and any building on it using the delete path
+	private void EraseCell(Vector2I cell)
+	{
+		_deleteStartCell = cell;
+		_deleteEndCell = cell;
+		DeleteRoadCellsInSelection();
+		DeleteCellsRequested?.Invoke(cell, cell);
+		QueueRedraw();
+	}
+
+	private void FinishErase()
+	{
+		if(!_isErasing)
+		{
+			return;
+		}
+
+		_isErasing = false;
+		SetEdgePan(false);
+		EndBatch();
+	}
+
+
 }
