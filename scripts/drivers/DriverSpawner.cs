@@ -110,14 +110,18 @@ public partial class DriverSpawner : Node2D
             while (plan.Spawned < plan.Source.DriverCount &&
                 ElapsedSeconds >= plan.Spawned * _duration / plan.Source.DriverCount)
             {
-                SpawnDriver(plan);
+                //wait if another vehicle is blocking spawn
+                if (!SpawnDriver(plan))
+                {
+                    break;
+                }
                 spawned = true;
             }
         }
         if (spawned) StateChanged?.Invoke();
     }
 
-    private void SpawnDriver(SpawnPlan plan)
+    private bool SpawnDriver(SpawnPlan plan)
     {
         DriverTrip trip = plan.Trips[plan.Spawned % plan.Trips.Count];
         Vector2 sourceOpening = _structures.ToGlobal(plan.Source.GetTrafficOpeningPosition());
@@ -131,6 +135,17 @@ public partial class DriverSpawner : Node2D
         points.AddRange(trip.RoadPoints);
         points.Add(consumerMouth - consumerDirection * _roads.RoadWidth);
 
+        // check if car is too close to spawn position
+        Vector2 spawnPosition = points[0];
+
+        foreach (Driver existingDriver in _drivers)
+        {
+            if (existingDriver.GlobalPosition.DistanceTo(spawnPosition) < 34.0f)
+            {
+                return false;
+            }
+        }
+
         var driver = new Driver
         {
             Name = $"Driver{SpawnedCount + 1}",
@@ -140,12 +155,15 @@ public partial class DriverSpawner : Node2D
         };
         driver.Route.AddRange(trip.Lanes);
         driver.Arrived += OnDriverArrived;
+        //give driver access to other cars
+        driver.SetOtherDrivers(_drivers);
         _drivers.Add(driver);
         AddChild(driver);
         driver.SetWaypoints(points);
         driver.SetTunnelOpenings(sourceOpening, sourceDirection, consumerOpening, consumerDirection);
         plan.Spawned++;
         SpawnedCount++;
+        return true;
     }
 
     // use the path in each road lane's travel direction
