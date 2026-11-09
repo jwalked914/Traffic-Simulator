@@ -364,7 +364,8 @@ public partial class Driver : Node2D
     //calculates route with existing LaneGraph
     public bool CalculateRoute(
         LaneGraph laneGraph,
-        Func<LaneID, LaneID, float> heuristic = null)
+        Func<LaneID, LaneID, float> heuristic = null,
+        Func<LaneID, float> laneLength = null)
     {
         Route.Clear();
 
@@ -412,7 +413,7 @@ public partial class Driver : Node2D
             {
                 LaneID neighbor = connection.To;
 
-                float tentativeScore = gScore[current] + 1.0f;
+                float tentativeScore = gScore[current] + (laneLength?.Invoke(neighbor) ?? 1.0f);
 
                 if (!gScore.ContainsKey(neighbor) ||
                     tentativeScore < gScore[neighbor])

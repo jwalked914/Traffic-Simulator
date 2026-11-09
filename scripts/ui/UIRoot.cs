@@ -17,6 +17,7 @@ public partial class UIRoot : CanvasLayer
 	private SimClock _clock;
 	private SimManagerPanel _simulationPanel;
 	private ScenarioManager _scenario;
+	private GridView _grid;
 
 	// save/load dialogs
 	private FileDialog _fileDialog;
@@ -36,6 +37,7 @@ public partial class UIRoot : CanvasLayer
 		_drivers = GetNode<DriverSpawner>("../World/DriverSpawner");
 		_clock = GetNode<SimClock>("../World/SimClock");
 		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
+		_grid = GetNode<GridView>("../World/GridView");
 		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
 
 		_simulationPanel.ToggleRequested += StartSimulation;
@@ -162,6 +164,7 @@ public partial class UIRoot : CanvasLayer
 		if (!IsSimulating && _clock.Running) _clock.Toggle();
 		_drivers.ProcessMode = _clock.Running ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
 		_toolBox.SetDisabled(IsSimulating);
+		_grid.SetEditingEnabled(!IsSimulating);
 		if (IsSimulating)
 		{
 			if (CurrentTool != ToolType.None || _structures.Selected != null)

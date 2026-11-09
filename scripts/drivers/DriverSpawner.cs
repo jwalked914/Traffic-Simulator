@@ -24,7 +24,7 @@ public partial class DriverSpawner : Node2D
     private sealed class SpawnPlan
     {
         public Structure Source;
-        public readonly List<DriverTrip> Trips = new();
+        public DriverTrip Trip;
         public int Spawned;
     }
 
@@ -49,32 +49,50 @@ public partial class DriverSpawner : Node2D
 
         _plans.Clear();
         var roadLanes = new Dictionary<LaneID, (RoadSegment Segment, bool Reverse)>();
+        var laneLengths = new Dictionary<LaneID, float>();
         foreach (RoadSegment segment in _roads.Segments)
         {
-            foreach (Lane lane in segment.LanesAtoB) roadLanes[lane.Id] = (segment, false);
-            foreach (Lane lane in segment.LanesBtoA) roadLanes[lane.Id] = (segment, true);
+            float length = 0;
+            for (int i = 1; i < segment.Path.Count; i++)
+            {
+                length += _roads.CellToGlobalCenter(segment.Path[i - 1]).DistanceTo(_roads.CellToGlobalCenter(segment.Path[i]));
+            }
+            foreach (Lane lane in segment.LanesAtoB)
+            {
+                roadLanes[lane.Id] = (segment, false);
+                laneLengths[lane.Id] = length;
+            }
+            foreach (Lane lane in segment.LanesBtoA)
+            {
+                roadLanes[lane.Id] = (segment, true);
+                laneLengths[lane.Id] = length;
+            }
         }
 
-        // route producer drivers to consumers
+        // choose the closest reachable consumer by road distance
         foreach (Structure source in _structures.Structures.Where(s => s.Type == StructureType.Producer && s.DriverCount > 0))
         {
             var plan = new SpawnPlan { Source = source };
+            float nearestDistance = float.PositiveInfinity;
             if (source.IsConnected)
             {
                 foreach (Structure consumer in consumers)
                 {
                     var probe = new Driver { SourceLane = source.ExitLane.Id, DestinationLane = consumer.EntryLane.Id };
-                    bool foundRoute = probe.CalculateRoute(_lanes);
+                    bool foundRoute = probe.CalculateRoute(_lanes, laneLength: lane => laneLengths.GetValueOrDefault(lane));
                     LaneID[] route = probe.Route.ToArray();
                     probe.Free();
                     if (!foundRoute) continue;
+                    float distance = route.Sum(lane => laneLengths.GetValueOrDefault(lane));
+                    if (distance >= nearestDistance) continue;
                     Vector2[] points = BuildRoadPoints(route, roadLanes);
                     if (points.Length < 2) continue;
-                    plan.Trips.Add(new DriverTrip(consumer, route, points));
+                    nearestDistance = distance;
+                    plan.Trip = new DriverTrip(consumer, route, points);
                 }
             }
 
-            if (plan.Trips.Count == 0)
+            if (plan.Trip == null)
             {
                 _plans.Clear();
                 error = $"Connect {source.Type} at {source.AnchorCell} to a reachable consumer.";
@@ -123,7 +141,7 @@ public partial class DriverSpawner : Node2D
 
     private bool SpawnDriver(SpawnPlan plan)
     {
-        DriverTrip trip = plan.Trips[plan.Spawned % plan.Trips.Count];
+        DriverTrip trip = plan.Trip;
         Vector2 sourceOpening = _structures.ToGlobal(plan.Source.GetTrafficOpeningPosition());
         Vector2 consumerOpening = _structures.ToGlobal(trip.Consumer.GetTrafficOpeningPosition());
         Vector2 sourceDirection = _structures.GlobalTransform.BasisXform(plan.Source.GetRoadFacingDirection()).Normalized();
