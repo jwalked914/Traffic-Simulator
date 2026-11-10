@@ -61,52 +61,50 @@ public class RoadNetwork
 		return segment;
 	}
 	
-	// Adds a dragged path, splitting existing segments and the new path wherever they meet.
+	// splits a dragged path at junctions and skips road sections already occupied
 	public List<RoadSegment> AddPath(IReadOnlyList<Vector2I> path)
 	{
 		var created = new List<RoadSegment>();
 		if (path.Count < 2) return created;
-		
-		// 1 classify edges as old or new
+
+		var seenEdges = new HashSet<(Vector2I, Vector2I)>();
+		var connectionsPerCell = new Dictionary<Vector2I, int>();
 		var edgeIsNew = new bool[path.Count - 1];
-		for (int i = 0; i < edgeIsNew.Length; ++i)
+		for (int i = 0; i < edgeIsNew.Length; i++)
 		{
-			edgeIsNew[i] = !EdgeExists(path[i], path[i + 1]);
+			Vector2I from = path[i];
+			Vector2I to = path[i + 1];
+			bool firstVisit = !seenEdges.Contains((to, from)) && seenEdges.Add((from, to));
+			edgeIsNew[i] = firstVisit && !EdgeExists(from, to);
+			if (firstVisit)
+			{
+				connectionsPerCell[from] = connectionsPerCell.GetValueOrDefault(from) + 1;
+				connectionsPerCell[to] = connectionsPerCell.GetValueOrDefault(to) + 1;
+			}
 		}
-		
-		// 2 split existing segments at overlap point only where new path diverges
-		for (int i = 0; i < path.Count; ++i)
+
+		for (int i = 0; i < path.Count; i++)
 		{
 			bool touchesNewEdge = (i > 0 && edgeIsNew[i - 1]) || (i < edgeIsNew.Length && edgeIsNew[i]);
-			if (touchesNewEdge)
-			{
-				SplitSegmentsAt(path[i]);
-			}
+			if (touchesNewEdge) SplitSegmentsAt(path[i]);
 		}
-		
-		// 3 split new path segments at endpoints
-		var pieces = new List<List<Vector2I>>();
-		var current = new List<Vector2I> {path[0]};
-		for (int i = 1; i < path.Count; ++i)
+
+		var current = new List<Vector2I> { path[0] };
+		for (int i = 0; i < edgeIsNew.Length; i++)
 		{
-			current.Add(path[i]);
-			if (i < path.Count - 1 && IsSegmentEndpoint(path[i]))
+			if (edgeIsNew[i]) current.Add(path[i + 1]);
+			bool endPiece = !edgeIsNew[i] || i == edgeIsNew.Length - 1 ||
+				IsSegmentEndpoint(path[i + 1]) || path[i + 1] == path[0] ||
+				connectionsPerCell[path[i + 1]] > 2;
+			if (endPiece)
 			{
-				pieces.Add(current);
-				current = new List<Vector2I> {path[i]};
+				if (current.Count > 1) created.Add(AddSegment(current));
+				current = new List<Vector2I> { path[i + 1] };
 			}
-		}
-		pieces.Add(current);
-		
-		// 4 add each piece, skipping overlapping segments
-		foreach (List<Vector2I> piece in pieces)
-		{
-			if (!EdgeExists(piece[0], piece[1]))
-				created.Add(AddSegment(piece));
 		}
 		return created;
 	}
-	
+
 	private bool EdgeExists(Vector2I a, Vector2I b)
 	{
 		foreach (RoadSegment s in _segments)

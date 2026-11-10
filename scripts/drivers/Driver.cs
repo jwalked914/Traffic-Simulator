@@ -37,15 +37,15 @@ public partial class Driver : Node2D
         switch (Personality)
         {
             case DriverPersonality.Cautious:
-                Speed = 30.0f;
+                Speed = 80.0f;
                 break;
 
             case DriverPersonality.Normal:
-                Speed = 50.0f;
+                Speed = 120.0f;
                 break;
 
             case DriverPersonality.Aggressive:
-                Speed = 75.0f;
+                Speed = 160.0f;
                 break;
         }
     }
@@ -125,6 +125,89 @@ public partial class Driver : Node2D
 
     // The next waypoint the driver is going to
     private int _currentWaypoint = 0;
+
+    //other Drivers currently in the simulation
+    private IEnumerable<Driver> _otherDrivers;
+
+    private const float SafeFollowDistance = 32.0f;
+    private const float DetectionDistance = 70.0f;
+    private const float LaneDetectionWidth = 10.0f;
+
+    //distance for cars crossing directions
+    private const float IntersectionConflictDistance = 36.0f;
+
+
+    public void SetOtherDrivers(IEnumerable<Driver> drivers)
+    {
+        _otherDrivers = drivers;
+    }
+
+    private float GetMovementSpeed(Vector2 direction)
+    {
+        float movementSpeed = Speed;
+        if (_otherDrivers == null)
+        {
+            return movementSpeed;
+        }
+
+        Vector2 sideDirection = new Vector2(-direction.Y, direction.X);
+
+        foreach (Driver other in _otherDrivers)
+        {
+            //prevent checking itself
+            if(other == this || !other.IsMoving)
+            {
+                continue;
+            }
+
+            Vector2 difference = other.GlobalPosition - GlobalPosition;
+
+            float distance = difference.Length();
+
+            //get other car direction
+            Vector2 otherDirection = new Vector2(Mathf.Cos(other.Rotation), Mathf.Sin(other.Rotation));
+
+            //check if traveling in different directions
+            float directionDot = Mathf.Abs(direction.Dot(otherDirection));
+
+            bool directionCross = directionDot < 0.866f;
+
+            //handle cars in deadlock crossing
+            if (directionCross && distance < IntersectionConflictDistance)
+            {
+                //lower driver id gets temp priority
+                if (DriverId < other.DriverId)
+                {
+                    continue;
+                }
+                else
+                {
+                    return 0.0f;
+                }
+            }
+
+            // distance ahead of driver
+            float distanceAhead = difference.Dot(direction);
+            //distance between the lanes
+            float sideDistance = Mathf.Abs(difference.Dot(sideDirection));
+
+            // only check cars in same lane
+            if (distanceAhead > 0 && distanceAhead < DetectionDistance && sideDistance < LaneDetectionWidth)
+            {
+                if (distanceAhead <= SafeFollowDistance)
+                {
+                    return 0.0f;
+                }
+
+                // slow down when approaching another car
+                float speedFactor = Mathf.Clamp((distanceAhead - SafeFollowDistance) / (DetectionDistance - SafeFollowDistance), 0.0f, 1.0f);
+
+                movementSpeed = Mathf.Min(movementSpeed, Speed * speedFactor);
+
+            }
+        }
+        return movementSpeed;
+    }
 
     // true when route to follow
     public bool IsMoving { get; private set; } = false;
@@ -246,8 +329,11 @@ public partial class Driver : Node2D
         // face forward to route
         Rotation = direction.Angle();
 
-        // move to next point.
-        float distance = Speed * (float)delta;
+        //check for othe cars
+        float movementSpeed = GetMovementSpeed(direction.Normalized());
+
+        // move to next point with adjusted speed
+        float distance = movementSpeed * (float)delta;
 
         GlobalPosition = GlobalPosition.MoveToward(
             target,
@@ -278,7 +364,8 @@ public partial class Driver : Node2D
     //calculates route with existing LaneGraph
     public bool CalculateRoute(
         LaneGraph laneGraph,
-        Func<LaneID, LaneID, float> heuristic = null)
+        Func<LaneID, LaneID, float> heuristic = null,
+        Func<LaneID, float> laneLength = null)
     {
         Route.Clear();
 
@@ -326,7 +413,7 @@ public partial class Driver : Node2D
             {
                 LaneID neighbor = connection.To;
 
-                float tentativeScore = gScore[current] + 1.0f;
+                float tentativeScore = gScore[current] + (laneLength?.Invoke(neighbor) ?? 1.0f);
 
                 if (!gScore.ContainsKey(neighbor) ||
                     tentativeScore < gScore[neighbor])
