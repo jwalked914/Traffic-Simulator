@@ -42,9 +42,7 @@ public partial class CheckpointTimeline : Control
 	// maps sim time to position of bar, squeezing once run passes window
 	private float TimeToX(double time)
 	{
-		double start = Clock.StartHour * 3600;
-		double span = Mathf.Max(WindowSeconds, Clock.SimTime - start);
-		float t = (float)((time - start) / span);
+		float t = (float)((time - Clock.DayStart) / SimClock.DaySeconds);
 		return Mathf.Lerp(Padding, Size.X - Padding, Mathf.Clamp(t, 0f, 1f));
 	}
 
