@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="357" height="357" viewBox="0 0 357 357">
+  <!-- background -->
+  <rect width="357" height="357" fill="#1B1B1D"/>
+  <!-- grid -->
+  <g stroke="#2F3034" stroke-width="1.5">
+    <path d="M118.5 0 V357 M238 0 V357"/>
+    <path d="M0 118.5 H357 M0 238 H357"/>
+  </g>
+  <!-- road -->
+  <line x1="178" y1="64" x2="178" y2="296" stroke="#5C6373" stroke-width="28" stroke-linecap="round"/>
+  <!-- center dashes -->
+  <g stroke="#D9DEE5" stroke-width="2">
+    <path d="M178 76 V88 M178 97 V106 M178 115 V124 M178 133 V142 M178 151 V160"/>
+    <path d="M178 169 V192"/>
+    <path d="M178 202 V210 M178 220 V228 M178 238 V246 M178 256 V264 M178 273 V285"/>
+  </g>
+</svg>

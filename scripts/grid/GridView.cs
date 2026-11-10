@@ -10,16 +10,18 @@ public partial class GridView : Node2D
 	[Export] public float HoverInset { get; set; } = 6.0f;
 	[Export] public float HoverOutlineWidth { get; set; } = 2.0f;
 
-	// temporary colors
-	// TODO: potentially replace this with a grass theme in the future
-	[ExportGroup("Dark Mode Colors")]
-	[Export] public Color BackgroundColor { get; set; } = new Color(0.105f, 0.105f, 0.115f);
-	[Export] public Color GridLineColor { get; set; } = new Color(0.220f, 0.225f, 0.245f);
+	[ExportGroup("Ground Colors")]
+	[Export] public Color BackgroundColor { get; set; } = new Color(0.92f, 0.965f, 0.945f);
+	[Export] public Color GrassPatchColor { get; set; } = new Color(0.78f, 0.89f, 0.81f, 0.45f);
+	[Export] public Color GridLineColor { get; set; } = new Color(0.63f, 0.76f, 0.69f, 0.30f);
 	[Export] public Color HoverFillColor { get; set; } = new Color(0.120f, 0.470f, 0.950f, 0.180f);
 	[Export] public Color HoverOutlineColor { get; set; } = new Color(0.250f, 0.620f, 1.000f, 0.900f);
 
 	private RoadGraph _roadGraph;
 	private Vector2I _hoveredCell;
+	private readonly RandomNumberGenerator _groundRandom = new();
+	private readonly StyleBoxFlat _grassStyle = new();
+	public bool EditingEnabled { get; private set; } = true;
 
 	public override void _Ready()
 	{
@@ -38,15 +40,22 @@ public partial class GridView : Node2D
 		QueueRedraw();
 	}
 
-	// recalculate hover state and redraw the grid every frame to ensure responsiveness
-	// TODO: potentially something to optimize later, but for now runs fine
+	// follows the camera and updates the hovered cell
 	public override void _Process(double delta)
 	{
-		UpdateHoveredCell();
+		if (EditingEnabled) UpdateHoveredCell();
 		QueueRedraw();
 	}
 
-	// draw only the visible portion of the infinite grid, plus a small buffer
+	// switches the editing grid and hover indicator
+	public void SetEditingEnabled(bool enabled)
+	{
+		if (EditingEnabled == enabled) return;
+		EditingEnabled = enabled;
+		QueueRedraw();
+	}
+
+	// draws the visible ground and editing grid
 	public override void _Draw()
 	{
 		if (_roadGraph == null)
@@ -63,6 +72,8 @@ public partial class GridView : Node2D
 		}
 
 		Rect2 visibleBounds = GetVisibleLocalBounds();
+		DrawGround(visibleBounds, cellSize);
+		if (!EditingEnabled) return;
 
 		// calculate the range of grid cells to draw
 		// +1 / -1 is the buffer
@@ -71,9 +82,34 @@ public partial class GridView : Node2D
 		int minY = Mathf.FloorToInt(visibleBounds.Position.Y / cellSize) - 1;
 		int maxY = Mathf.CeilToInt(visibleBounds.End.Y / cellSize) + 1;
 
-		DrawRect(visibleBounds.Grow(cellSize * 2.0f), BackgroundColor);
 		DrawGridLines(minX, maxX, minY, maxY, visibleBounds, cellSize);
 		DrawHoveredCell();
+	}
+
+	// keeps the grass patches in the same world positions as the camera moves
+	private void DrawGround(Rect2 bounds, float cellSize)
+	{
+		DrawRect(bounds.Grow(cellSize), BackgroundColor);
+		_grassStyle.BgColor = GrassPatchColor;
+		_grassStyle.SetCornerRadiusAll(Mathf.RoundToInt(cellSize * 0.08f));
+		float spacing = cellSize * 3.0f;
+		int minX = Mathf.FloorToInt(bounds.Position.X / spacing);
+		int maxX = Mathf.CeilToInt(bounds.End.X / spacing);
+		int minY = Mathf.FloorToInt(bounds.Position.Y / spacing);
+		int maxY = Mathf.CeilToInt(bounds.End.Y / spacing);
+
+		for (int x = minX; x <= maxX; x++)
+		{
+			for (int y = minY; y <= maxY; y++)
+			{
+				_groundRandom.Seed = ((ulong)(uint)x << 32) | (uint)y;
+				if (_groundRandom.Randf() < 0.35f) continue;
+				Vector2 size = new Vector2(_groundRandom.RandfRange(0.25f, 0.75f),
+					_groundRandom.RandfRange(0.25f, 0.9f)) * cellSize;
+				Vector2 offset = new Vector2(_groundRandom.Randf(), _groundRandom.Randf()) * (Vector2.One * spacing - size);
+				DrawStyleBox(_grassStyle, new Rect2(new Vector2(x, y) * spacing + offset, size));
+			}
+		}
 	}
 
 	// draw the boundaries for the visible grid area
