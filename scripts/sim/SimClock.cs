@@ -8,7 +8,7 @@ using System.Collections.Generic;
 
 public partial class SimClock : Node
 {
-    [Export] public double StartHour {get; set;} = 8.0;
+    [Export] public double StartHour {get; set;} = 0.0;
     [Export] public double SpawnWindowSeconds { get; set; } = 60.0;
     [Export] public double DayLengthMinutes { get; set; } = 12.0;
     [Export] public double CheckpointInterval { get; set; } = 0;

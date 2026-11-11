@@ -107,7 +107,6 @@ layout_mode = 2
 theme_override_styles/normal = ExtResource("3_jlrf6")
 theme_override_styles/pressed = ExtResource("4_qwj7x")
 theme_override_styles/hover = ExtResource("5_oowcf")
-toggle_mode = true
 icon = ExtResource("3_tc03l")
 
 [node name="RoadButton" type="Button" parent="PanelContainer/ToolBoxButtons" unique_id=1007805354]
@@ -183,7 +182,6 @@ layout_mode = 2
 theme_override_styles/normal = ExtResource("3_jlrf6")
 theme_override_styles/pressed = ExtResource("4_qwj7x")
 theme_override_styles/hover = ExtResource("5_oowcf")
-toggle_mode = true
 icon = ExtResource("12_6gofn")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1557215978]

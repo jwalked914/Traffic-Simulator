@@ -24,7 +24,6 @@ anchors_preset = 6
 anchor_top = 0.5
 anchor_bottom = 0.5
 offset_left = 0.0
-grow_vertical = 2
 mouse_filter = 0
 
 [node name="SimManagerPanel" type="Control" parent="." unique_id=1657399947]
@@ -98,7 +97,6 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("10_ah7cs")
-NowColor = Color(0.1680183, 0.1680183, 0.90982777, 1)
 
 [node name="SpeedRow" type="HBoxContainer" parent="SimManagerPanel/PanelContainer/Content" unique_id=1845830755]
 layout_mode = 2
