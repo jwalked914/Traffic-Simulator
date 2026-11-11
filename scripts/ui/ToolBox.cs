@@ -1,7 +1,7 @@
 using Godot;
 using System.Collections.Generic;
 
-public enum ToolType { None, Road, Junction, Structure, Home, Roundabout }
+public enum ToolType { None, Road, Junction, Structure, Home, Roundabout, Erase}
 
 public partial class ToolBox : Control
 {
@@ -20,6 +20,8 @@ public partial class ToolBox : Control
 	// registers the tool buttons and shows the first page
 	public override void _Ready()
 	{
+		_buttons[ToolType.Erase] = GetNode<Button>("PanelContainer/ToolBoxButtons/EditButtons/EraseButton");
+
 		_buttons[ToolType.Road] = GetNode<Button>("PanelContainer/ToolBoxButtons/RoadButton");
 		_buttons[ToolType.Junction] = GetNode<Button>("PanelContainer/ToolBoxButtons/JunctionButton");
 		_buttons[ToolType.Structure] = GetNode<Button>("PanelContainer/ToolBoxButtons/BuildingsButton");
@@ -89,5 +91,8 @@ public partial class ToolBox : Control
 	{
 		foreach (Button button in _buttons.Values)
 			button.Disabled = disabled || _unavailable.Contains(button);
+
+		_prev.Disabled = disabled;
+		_next.Disabled = disabled;
 	}
 }

@@ -25,6 +25,9 @@ public partial class CameraController : Camera2D
 
 	public override void _Process(double delta)
 	{
+		// added to prevent simulation speed from movement speed
+		delta /= Engine.TimeScale;
+		
 		// get movement input from the player
 		Vector2 movement = Input.GetVector("move_left", "move_right", "move_up", "move_down");
 

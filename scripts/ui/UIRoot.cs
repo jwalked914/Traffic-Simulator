@@ -44,6 +44,7 @@ public partial class UIRoot : CanvasLayer
 		_simulationPanel.StopRequested += StopSimulation;
 		_drivers.StateChanged += RefreshSimulationControls;
 		_clock.StateChanged += RefreshSimulationControls;
+		_clock.DayEnded += OnDayEnded;
 
 		var roads = GetNode<RoadGraph>("../World/RoadGraph");
 		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
@@ -99,6 +100,7 @@ public partial class UIRoot : CanvasLayer
 		_structures.PlacementRejected -= _inspector.SetMessage;
 		_drivers.StateChanged -= RefreshSimulationControls;
 		_clock.StateChanged -= RefreshSimulationControls;
+		_clock.DayEnded -= OnDayEnded;
 		_simulationPanel.ToggleRequested -= StartSimulation;
 		_simulationPanel.StopRequested -= StopSimulation;
 	}
@@ -141,7 +143,7 @@ public partial class UIRoot : CanvasLayer
 	{
 		if (!_drivers.IsRunning)
 		{
-			if (!_drivers.TryStart(60, out string error))
+			if (!_drivers.TryStart(_clock.SpawnWindowSeconds, out string error))
 			{
 				_simulationPanel.SetMessage(error);
 				return;
@@ -164,6 +166,7 @@ public partial class UIRoot : CanvasLayer
 		if (!IsSimulating && _clock.Running) _clock.Toggle();
 		_drivers.ProcessMode = _clock.Running ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
 		_toolBox.SetDisabled(IsSimulating);
+		_toolBox.Visible = !IsSimulating;
 		_grid.SetEditingEnabled(!IsSimulating);
 		if (IsSimulating)
 		{
@@ -265,5 +268,11 @@ public partial class UIRoot : CanvasLayer
 		if (result.Success) return;
 		_messageDialog.DialogText = string.Join("\n", result.Errors.Take(10));
 		_messageDialog.PopupCentered();
+	}
+
+	private void OnDayEnded()
+	{
+		StopSimulation();
+		_simulationPanel.SetMessage("Day complete.");
 	}
 }

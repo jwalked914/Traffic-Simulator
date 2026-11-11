@@ -8,14 +8,21 @@ using System.Collections.Generic;
 
 public partial class SimClock : Node
 {
-    [Export] public double StartHour {get; set;} = 8.0;
-    [Export] public double SimSecondsPerRealSecond { get; set;} = 60.0;
+    [Export] public double StartHour {get; set;} = 0.0;
+    [Export] public double SpawnWindowSeconds { get; set; } = 60.0;
+    [Export] public double DayLengthMinutes { get; set; } = 12.0;
     [Export] public double CheckpointInterval { get; set; } = 0;
+
+    public const double DaySeconds = 24 * 3600;
+    public double SimSecondsPerRealSecond => DaySeconds / (DayLengthMinutes * 60);
+    public double DayStart => StartHour * 3600;
+    public double DayEnd => DayStart + DaySeconds;
 
     public double SimTime { get; private set; }
     public bool Running { get; private set; }
     public float Speed { get; private set; }  = 1f; // TODO: add some kind of ui element to change this
 
+    public event Action DayEnded;
     public event Action<double> Ticked;
     public event Action StateChanged;
     public event Action<int, double, double> CheckpointAdded; // number, sim time, time interval
@@ -28,7 +35,7 @@ public partial class SimClock : Node
     {
         
         int s = (int)seconds;
-        return $"{s / 3600:00}:{s / 60 % 60:00}";
+        return $"{s / 3600 % 24:00}:{s / 60 % 60:00}";
     }
 
     public string TimeText => Format(SimTime);
@@ -40,7 +47,7 @@ public partial class SimClock : Node
     public override void _Process(double delta)
     {
         if (!Running) return;
-        double dt = delta * SimSecondsPerRealSecond * Speed;
+        double dt = Math.Min(delta * SimSecondsPerRealSecond, DayEnd - SimTime);
         SimTime += dt;
         Ticked?.Invoke(dt);
 
@@ -48,6 +55,13 @@ public partial class SimClock : Node
         {
             AddCheckpoint();
             _nextAutocheckpoint += CheckpointInterval;
+        }
+
+        if(SimTime >= DayEnd)
+        {
+            Running = false;
+            StateChanged?.Invoke();
+            DayEnded?.Invoke();
         }
     }
 
@@ -79,10 +93,13 @@ public partial class SimClock : Node
 
 
     // sets sim speed
-    /*public void SetSpeed(float speed)
+    public void SetSpeed(float speed)
     {
-        Speed = speed;
+        Speed = Mathf.Clamp(speed, 0.25f, 8f);
+        Engine.TimeScale = Speed;
         StateChanged?.Invoke();
-    }*/
+    }
+
+    public override void _ExitTree() => Engine.TimeScale = 1.0;
 
 }
