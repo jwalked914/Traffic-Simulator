@@ -143,7 +143,7 @@ public partial class UIRoot : CanvasLayer
 	{
 		if (!_drivers.IsRunning)
 		{
-			if (!_drivers.TryStart(_clock.DayLengthMinutes * 60, out string error))
+			if (!_drivers.TryStart(_clock.SpawnWindowSeconds, out string error))
 			{
 				_simulationPanel.SetMessage(error);
 				return;

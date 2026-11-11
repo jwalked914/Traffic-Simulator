@@ -9,6 +9,7 @@ using System.Collections.Generic;
 public partial class SimClock : Node
 {
     [Export] public double StartHour {get; set;} = 8.0;
+    [Export] public double SpawnWindowSeconds { get; set; } = 60.0;
     [Export] public double DayLengthMinutes { get; set; } = 12.0;
     [Export] public double CheckpointInterval { get; set; } = 0;
 
@@ -46,7 +47,7 @@ public partial class SimClock : Node
     public override void _Process(double delta)
     {
         if (!Running) return;
-        double dt = Math.Min(delta * SimSecondsPerRealSecond * Speed, DayEnd - SimTime);
+        double dt = Math.Min(delta * SimSecondsPerRealSecond, DayEnd - SimTime);
         SimTime += dt;
         Ticked?.Invoke(dt);
 
@@ -95,7 +96,10 @@ public partial class SimClock : Node
     public void SetSpeed(float speed)
     {
         Speed = Mathf.Clamp(speed, 0.25f, 8f);
+        Engine.TimeScale = Speed;
         StateChanged?.Invoke();
     }
+
+    public override void _ExitTree() => Engine.TimeScale = 1.0;
 
 }

@@ -100,6 +100,25 @@ size_flags_vertical = 3
 script = ExtResource("10_ah7cs")
 NowColor = Color(0.1680183, 0.1680183, 0.90982777, 1)
 
+[node name="SpeedRow" type="HBoxContainer" parent="SimManagerPanel/PanelContainer/Content" unique_id=1845830755]
+layout_mode = 2
+
+[node name="SpeedTitle" type="Label" parent="SimManagerPanel/PanelContainer/Content/SpeedRow" unique_id=963297194]
+layout_mode = 2
+text = "Speed"
+
+[node name="SpeedSlider" type="HSlider" parent="SimManagerPanel/PanelContainer/Content/SpeedRow" unique_id=1463143706]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+max_value = 3.0
+tick_count = 4
+ticks_on_borders = true
+
+[node name="SpeedValue" type="Label" parent="SimManagerPanel/PanelContainer/Content/SpeedRow" unique_id=305603820]
+layout_mode = 2
+text = "1x"
+
 [node name="Status" type="Label" parent="SimManagerPanel/PanelContainer/Content" unique_id=1156925136]
 visible = false
 layout_mode = 2
