@@ -99,6 +99,19 @@ public partial class UIRoot : CanvasLayer
 
 		RefreshSimulationControls();
 	}
+	
+	// handles all keyboard shortcuts
+	public override void _UnhandledKeyInput(InputEvent @event)
+	{
+		if (@event is not InputEventKey { Pressed: true }) return;
+		if (IsSimulating) return; // editing shortcuts are off during a run
+
+		if (@event.IsActionPressed("toggle_erase", false, true)) _toolBox.ToggleErase();
+		else if (@event.IsActionPressed("save", false, true)) OnSimMenuItemPressed(1);
+		else return;
+
+		GetViewport().SetInputAsHandled();
+	}
 
 	//gets road settings whenever inspector changes
 	private void OnRoadSettingsChanged(int lanesPerDirections, int speedLimit)
