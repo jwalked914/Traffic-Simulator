@@ -18,6 +18,8 @@ public partial class UIRoot : CanvasLayer
 	private SimManagerPanel _simulationPanel;
 	private ScenarioManager _scenario;
 	private GridView _grid;
+	private RoadGraph _roads;
+	private SettingsPopup settingsWindow;
 
 	// save/load dialogs
 	private FileDialog _fileDialog;
@@ -39,6 +41,8 @@ public partial class UIRoot : CanvasLayer
 		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
 		_grid = GetNode<GridView>("../World/GridView");
 		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
+		settingsWindow = new SettingsPopup();
+		AddChild(settingsWindow);
 
 		_simulationPanel.ToggleRequested += StartSimulation;
 		_simulationPanel.StopRequested += StopSimulation;
@@ -46,8 +50,13 @@ public partial class UIRoot : CanvasLayer
 		_clock.StateChanged += RefreshSimulationControls;
 		_clock.DayEnded += OnDayEnded;
 
-		var roads = GetNode<RoadGraph>("../World/RoadGraph");
-		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
+		_roads = GetNode<RoadGraph>("../World/RoadGraph");
+		_inspector.SetParkingScale(_roads.CellSize, _roads.RoadWidth);
+		//connect road settings to rod graph
+		_inspector.RoadSettingsChanged += OnRoadSettingsChanged;
+
+		//apply starting speed limit
+		_roads.SetSpeedLimit(_inspector.SpeedLimit);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
 
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
@@ -91,10 +100,17 @@ public partial class UIRoot : CanvasLayer
 		RefreshSimulationControls();
 	}
 
+	//gets road settings whenever inspector changes
+	private void OnRoadSettingsChanged(int lanesPerDirections, int speedLimit)
+	{
+		_roads.SetSpeedLimit(speedLimit);
+	}
+
 	// disconnects updates when leaving the simulator
 	public override void _ExitTree()
 	{
 		if (_structures == null) return;
+		_inspector.RoadSettingsChanged -= OnRoadSettingsChanged;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;
@@ -215,7 +231,8 @@ public partial class UIRoot : CanvasLayer
 				GetTree().ChangeSceneToFile(MainMenuScene);
 				break;
 
-			case 6: // settings?
+			case 6: // settings
+				settingsWindow.ShowSettings();
 				break;
 
 			case 7: // close app

@@ -89,7 +89,11 @@ public partial class GridView : Node2D
 	// keeps the grass patches in the same world positions as the camera moves
 	private void DrawGround(Rect2 bounds, float cellSize)
 	{
-		DrawRect(bounds.Grow(cellSize), BackgroundColor);
+		Color groundColor = DesignSettings.DarkMode
+			? new Color(0.04f, 0.12f, 0.075f)
+			: BackgroundColor;
+
+		DrawRect(bounds.Grow(cellSize), groundColor);
 		_grassStyle.BgColor = GrassPatchColor;
 		_grassStyle.SetCornerRadiusAll(Mathf.RoundToInt(cellSize * 0.08f));
 		float spacing = cellSize * 3.0f;

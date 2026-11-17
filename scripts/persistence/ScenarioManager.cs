@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 public partial class ScenarioManager : Node
@@ -47,11 +48,22 @@ public partial class ScenarioManager : Node
 			RoadWidth = _roads.RoadWidth
 		};
 		
-		var paths = _roads.Segments.Select(s => CanonicalOrder.CanonicalPath(s.Path)).ToList();
-		paths.Sort(CanonicalOrder.ComparePaths);
-		foreach (var path in paths)
-			data.Roads.Add(new RoadData { Path = path.Select(c => new[] {c.X, c.Y}).ToList() });
-			
+		var roads = _roads.Segments.Select(s => (
+			Path: CanonicalOrder.CanonicalPath(s.Path),
+			SpeedLimit: s.SpeedLimit
+		))
+		.ToList();
+
+		roads.Sort((a, b) => CanonicalOrder.ComparePaths(a.Path, b.Path));
+
+		foreach (var road in roads)
+		{
+			data.Roads.Add(new RoadData
+			{
+				Path = road.Path.Select(c => new[] { c.X, c.Y}).ToList(),
+				SpeedLimit = road.SpeedLimit
+			});
+		}
 		foreach (Structure s in _structures.Structures
 			.OrderBy(s => s.AnchorCell, Comparer<Vector2I>.Create(CanonicalOrder.CompareCells)))
 		{
@@ -142,7 +154,7 @@ public partial class ScenarioManager : Node
 			foreach (RoadData road in data.Roads)
 			{
 				var path = road.Path.Select(a => new Vector2I(a[0], a[1]) + offset).ToList();
-				if (!_roads.TryAddRoad(path, out _)) result.Errors.Add("A road was rejected.");
+				if (!_roads.TryAddRoad(path, road.SpeedLimit, out _)) result.Errors.Add("A road was rejected.");
 			}
 			foreach (StructureData s in data.Structures)
 			{

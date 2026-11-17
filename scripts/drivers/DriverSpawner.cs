@@ -19,7 +19,7 @@ public partial class DriverSpawner : Node2D
     private readonly HashSet<Driver> _drivers = new();
     private readonly List<SpawnPlan> _plans = new();
 
-    private sealed record DriverTrip(Structure Consumer, LaneID[] Lanes, Vector2[] RoadPoints);
+    private sealed record DriverTrip(Structure Consumer, LaneID[] Lanes, Vector2[] RoadPoints, float[] SpeedLimits);
 
     private sealed class SpawnPlan
     {
@@ -85,10 +85,11 @@ public partial class DriverSpawner : Node2D
                     if (!foundRoute) continue;
                     float distance = route.Sum(lane => laneLengths.GetValueOrDefault(lane));
                     if (distance >= nearestDistance) continue;
-                    Vector2[] points = BuildRoadPoints(route, roadLanes);
+                    var speedLimits = new List<float>();
+                    Vector2[] points = BuildRoadPoints(route, roadLanes, speedLimits);
                     if (points.Length < 2) continue;
                     nearestDistance = distance;
-                    plan.Trip = new DriverTrip(consumer, route, points);
+                    plan.Trip = new DriverTrip(consumer, route, points, speedLimits.ToArray());
                 }
             }
 
@@ -152,6 +153,10 @@ public partial class DriverSpawner : Node2D
         points.Add(sourceMouth - sourceDirection * _roads.RoadWidth);
         points.AddRange(trip.RoadPoints);
         points.Add(consumerMouth - consumerDirection * _roads.RoadWidth);
+        var speedLimits = new List<float>();
+        speedLimits.Add(trip.SpeedLimits[0]);
+        speedLimits.AddRange(trip.SpeedLimits);
+        speedLimits.Add(trip.SpeedLimits[^1]);
 
         // check if car is too close to spawn position
         Vector2 spawnPosition = points[0];
@@ -177,7 +182,7 @@ public partial class DriverSpawner : Node2D
         driver.SetOtherDrivers(_drivers);
         _drivers.Add(driver);
         AddChild(driver);
-        driver.SetWaypoints(points);
+        driver.SetWaypoints(points, speedLimits);
         driver.SetTunnelOpenings(sourceOpening, sourceDirection, consumerOpening, consumerDirection);
         plan.Spawned++;
         SpawnedCount++;
@@ -186,7 +191,7 @@ public partial class DriverSpawner : Node2D
 
     // use the path in each road lane's travel direction
     private Vector2[] BuildRoadPoints(IReadOnlyList<LaneID> route,
-        Dictionary<LaneID, (RoadSegment Segment, bool Reverse)> roadLanes)
+        Dictionary<LaneID, (RoadSegment Segment, bool Reverse)> roadLanes, List<float> speedLimits)
     {
         var points = new List<Vector2>();
         foreach (LaneID lane in route)
@@ -195,7 +200,13 @@ public partial class DriverSpawner : Node2D
             IEnumerable<Vector2I> cells = road.Segment.Path;
             if (road.Reverse) cells = cells.Reverse();
             Vector2[] centers = cells.Select(_roads.CellToGlobalCenter).ToArray();
-            points.AddRange(Driver.CreateLaneWaypoints(centers, _roads.RoadWidth * 0.25f));
+            List<Vector2> laneWaypoints = Driver.CreateLaneWaypoints(centers, _roads.RoadWidth * 0.25f);
+            points.AddRange(laneWaypoints);
+
+            for (int i = 0; i < laneWaypoints.Count; i++)
+            {
+                speedLimits.Add(road.Segment.SpeedLimit);
+            }
         }
         return points.ToArray();
     }

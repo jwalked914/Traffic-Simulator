@@ -31,6 +31,9 @@ public partial class RoadGraph : Node2D
 	private RoadNetwork _roadNetwork;
 	private UIRoot _ui;
 	private StructureGraph _structures;
+
+	//speed limit for new roads (default in inspector)
+	private float _currentSpeedLimit = 35.0f;
 	private bool _isDraggingRoad;
 	private bool _isSelectingDelete;
 	private Vector2I _deleteStartCell;
@@ -43,6 +46,12 @@ public partial class RoadGraph : Node2D
 
 	public IReadOnlyList<RoadSegment> Segments => _roadNetwork?.Segments ?? Array.Empty<RoadSegment>();
 	public bool IsDeleteSelecting => _isSelectingDelete;
+
+	//update speed limit for new roads
+	public void SetSpeedLimit(int speedLimit)
+	{
+		_currentSpeedLimit = speedLimit;
+	}
 
 	public event Action<RoadSegment> RoadPlaced;
 	public event Action RoadsChanged;
@@ -339,25 +348,40 @@ public partial class RoadGraph : Node2D
 		return true;
 	}
 	
+	//adds roads with speed limit
 	public bool TryAddRoad(IReadOnlyList<Vector2I> path, out RoadSegment segment)
 	{
-		segment = null;
-		if (_roadNetwork == null || _ui.IsSimulating || path == null || path.Count < 2 ||
-			path.Any(cell => _structures.IsCellOccupied(cell))) return false;
-		for (int i = 1; i < path.Count; i++)
-		{
-			Vector2I difference = path[i] - path[i - 1];
-			if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1) return false;
-		}
-		
-		List<RoadSegment> created = _roadNetwork.AddPath(path);
-		foreach (RoadSegment s in created) RoadPlaced?.Invoke(s);
-		segment = created.FirstOrDefault();
-		NotifyRoadsChanged();
-		QueueRedraw();
-		return true;
+    	return TryAddRoad(path, _currentSpeedLimit, out segment);
 	}
 
+	public bool TryAddRoad(IReadOnlyList<Vector2I> path, float speedLimit, out RoadSegment segment)
+	{
+    	segment = null;
+
+    	if (_roadNetwork == null || _ui.IsSimulating || path == null || path.Count < 2 ||
+        	path.Any(cell => _structures.IsCellOccupied(cell)))
+        	return false;
+
+    	for (int i = 1; i < path.Count; i++)
+    	{
+        	Vector2I difference = path[i] - path[i - 1];
+
+        	if (Math.Abs(difference.X) + Math.Abs(difference.Y) != 1)
+            	return false;
+    	}
+
+    	List<RoadSegment> created = _roadNetwork.AddPath(path, speedLimit);
+
+    	foreach (RoadSegment s in created)
+        	RoadPlaced?.Invoke(s);
+
+    	segment = created.FirstOrDefault();
+
+    	NotifyRoadsChanged();
+    	QueueRedraw();
+
+    	return true;
+	}
 	// places the road that was shown in the preview
 	private void FinishRoadDrag()
 	{
@@ -610,10 +634,12 @@ public partial class RoadGraph : Node2D
 			}
 
 			AddRemainingRun(remainingRuns, currentRun);
+			//remember speed limit
+			float originalSpeedLimit = segment.SpeedLimit;
 			_roadNetwork.RemoveSegment(segment);
 			foreach (List<Vector2I> run in remainingRuns)
 			{
-				_roadNetwork.AddSegment(run);
+				_roadNetwork.AddSegment(run, originalSpeedLimit);
 			}
 
 			changed = true;

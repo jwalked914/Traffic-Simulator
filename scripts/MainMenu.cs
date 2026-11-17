@@ -8,6 +8,7 @@ public partial class MainMenu : Control
 	private Button exitButton;
 
 	private FileDialog loadFileDialog;
+	private SettingsPopup settingsWindow;
 	private const string DesignScene = "res://scenes/traffic_simulator.tscn";
 	private const string SaveDirectory = "user://scenarios";
 	public override void _Ready()
@@ -37,7 +38,12 @@ public partial class MainMenu : Control
 
 		loadFileDialog.FileSelected += OnLoadFileSelected;
 		AddChild(loadFileDialog);
+
+		//make settings window
+		settingsWindow = new SettingsPopup();
+		AddChild(settingsWindow);
 	}
+
 
 	private void OnNewDesignPressed()
 	{
@@ -64,7 +70,7 @@ public partial class MainMenu : Control
 
 	private void OnSettingsPressed()
 	{
-		GD.Print("Settings pressed");
+		settingsWindow.ShowSettings();
 	}
 
 	private void OnExitPressed()
