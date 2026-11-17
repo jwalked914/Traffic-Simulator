@@ -19,6 +19,7 @@ public partial class UIRoot : CanvasLayer
 	private ScenarioManager _scenario;
 	private GridView _grid;
 	private RoadGraph _roads;
+	private SettingsPopup settingsWindow;
 
 	// save/load dialogs
 	private FileDialog _fileDialog;
@@ -40,6 +41,8 @@ public partial class UIRoot : CanvasLayer
 		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
 		_grid = GetNode<GridView>("../World/GridView");
 		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
+		settingsWindow = new SettingsPopup();
+		AddChild(settingsWindow);
 
 		_simulationPanel.ToggleRequested += StartSimulation;
 		_simulationPanel.StopRequested += StopSimulation;
@@ -225,7 +228,8 @@ public partial class UIRoot : CanvasLayer
 				GetTree().ChangeSceneToFile(MainMenuScene);
 				break;
 
-			case 6: // settings?
+			case 6: // settings
+				settingsWindow.ShowSettings();
 				break;
 
 			case 7: // close app
