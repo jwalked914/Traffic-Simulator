@@ -32,22 +32,27 @@ public partial class Driver : Node2D
     private bool _enteringTunnel;
 
     //sets speed based on personality
-    public void AssignSpeed()
+    private float GetSpeedForLimit(float speedLimit)
     {
+        float targetSpeed = speedLimit;
         switch (Personality)
         {
             case DriverPersonality.Cautious:
-                Speed = 80.0f;
+                targetSpeed -= 5.0f;
                 break;
 
             case DriverPersonality.Normal:
-                Speed = 120.0f;
+                //normal drivers follow speed limit
                 break;
 
             case DriverPersonality.Aggressive:
-                Speed = 160.0f;
+                targetSpeed += 10.0f;
                 break;
         }
+
+        //convert mph to units for simulation
+        // 35 mph, normal at 120 units per second
+        return targetSpeed * (120.0f / 35.0f);
     }
 
     //car graphics
@@ -103,8 +108,8 @@ public partial class Driver : Node2D
 
     public override void _Ready()
     {
-        // Set driver's speed from personality
-        AssignSpeed();
+        // Set driver's speed from personality (default befor on road)
+        Speed = GetSpeedForLimit(35.0f);
 
         // choose color for car
         AssignRandomCarColor();
@@ -122,6 +127,8 @@ public partial class Driver : Node2D
     
     // world coordinates
     private readonly List<Vector2> _waypoints = new List<Vector2>();
+    //speed limit for each waypoint
+    private readonly List<float> _waypointSpeedLimits = new List<float>();
 
     // The next waypoint the driver is going to
     private int _currentWaypoint = 0;
@@ -258,10 +265,36 @@ public partial class Driver : Node2D
 
     
 
+    //set waypoints with default 35
     public void SetWaypoints(IEnumerable<Vector2> waypoints)
+    {
+        var points = new List<Vector2>(waypoints);
+
+        var speedLimits = new List<float>();
+
+        for (int i = 0; i < points.Count; i++)
+        {
+            speedLimits.Add(35.0f);
+        }
+
+        SetWaypoints(points, speedLimits);
+    }
+
+    //set waypoints with speed limit
+    public void SetWaypoints(
+        IEnumerable<Vector2> waypoints,
+        IEnumerable<float> speedLimits)
     {
         _waypoints.Clear();
         _waypoints.AddRange(waypoints);
+
+        _waypointSpeedLimits.Clear();
+        _waypointSpeedLimits.AddRange(speedLimits);
+
+        while (_waypointSpeedLimits.Count < _waypoints.Count)
+        {
+            _waypointSpeedLimits.Add(35.0f);
+        }
 
         _currentWaypoint = 0;
         IsMoving = _waypoints.Count > 0;
@@ -328,6 +361,11 @@ public partial class Driver : Node2D
 
         // face forward to route
         Rotation = direction.Angle();
+
+        //update speed based on speed limit
+        int speedIndex = Mathf.Clamp(_currentWaypoint, 0, _waypointSpeedLimits.Count - 1);
+
+        Speed = GetSpeedForLimit(_waypointSpeedLimits[speedIndex]);
 
         //check for othe cars
         float movementSpeed = GetMovementSpeed(direction.Normalized());

@@ -18,6 +18,7 @@ public partial class UIRoot : CanvasLayer
 	private SimManagerPanel _simulationPanel;
 	private ScenarioManager _scenario;
 	private GridView _grid;
+	private RoadGraph _roads;
 
 	// save/load dialogs
 	private FileDialog _fileDialog;
@@ -45,8 +46,13 @@ public partial class UIRoot : CanvasLayer
 		_drivers.StateChanged += RefreshSimulationControls;
 		_clock.StateChanged += RefreshSimulationControls;
 
-		var roads = GetNode<RoadGraph>("../World/RoadGraph");
-		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
+		_roads = GetNode<RoadGraph>("../World/RoadGraph");
+		_inspector.SetParkingScale(_roads.CellSize, _roads.RoadWidth);
+		//connect road settings to rod graph
+		_inspector.RoadSettingsChanged += OnRoadSettingsChanged;
+
+		//apply starting speed limit
+		_roads.SetSpeedLimit(_inspector.SpeedLimit);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
 
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
@@ -90,10 +96,17 @@ public partial class UIRoot : CanvasLayer
 		RefreshSimulationControls();
 	}
 
+	//gets road settings whenever inspector changes
+	private void OnRoadSettingsChanged(int lanesPerDirections, int speedLimit)
+	{
+		_roads.SetSpeedLimit(speedLimit);
+	}
+
 	// disconnects updates when leaving the simulator
 	public override void _ExitTree()
 	{
 		if (_structures == null) return;
+		_inspector.RoadSettingsChanged -= OnRoadSettingsChanged;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;
