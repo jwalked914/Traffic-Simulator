@@ -86,7 +86,7 @@ public partial class UIRoot : CanvasLayer
 		_structures.SelectionChanged += OnStructureSelected;
 		_structures.StructuresChanged += _inspector.RefreshDetails;
 		_structures.PlacementRejected += _inspector.SetMessage;
-		
+
 		// load a scenario selected from the main menu, if one was selected
 		string path = ScenarioLoadRequest.PendingPath;
 		if (!string.IsNullOrEmpty(path))
@@ -99,7 +99,7 @@ public partial class UIRoot : CanvasLayer
 
 		RefreshSimulationControls();
 	}
-	
+
 	// handles all keyboard shortcuts
 	public override void _UnhandledKeyInput(InputEvent @event)
 	{
@@ -108,6 +108,15 @@ public partial class UIRoot : CanvasLayer
 
 		if (@event.IsActionPressed("toggle_erase", false, true)) _toolBox.ToggleErase();
 		else if (@event.IsActionPressed("save", false, true)) OnSimMenuItemPressed(1);
+		else if (@event.IsActionPressed("copy", false, true))
+		{
+			if (_roads.TryGetSelection(out Vector2I min, out Vector2I max))
+			{
+				// TODO: build clipboard data
+				// likely using existing json implementation?
+			}
+		}
+		else if (@event.IsActionPressed("ui_cancel", false, true)) _roads.ClearSelection();
 		else return;
 
 		GetViewport().SetInputAsHandled();
