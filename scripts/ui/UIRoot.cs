@@ -19,6 +19,7 @@ public partial class UIRoot : CanvasLayer
 	private ScenarioManager _scenario;
 	private GridView _grid;
 	private RoadGraph _roads;
+	private PasteController _paste;
 	private SettingsPopup settingsWindow;
 
 	// save/load dialogs
@@ -41,6 +42,7 @@ public partial class UIRoot : CanvasLayer
 		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
 		_grid = GetNode<GridView>("../World/GridView");
 		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
+		_paste = GetNode<PasteController>("../World/PasteController");
 		settingsWindow = new SettingsPopup();
 		AddChild(settingsWindow);
 
@@ -108,15 +110,18 @@ public partial class UIRoot : CanvasLayer
 
 		if (@event.IsActionPressed("toggle_erase", false, true)) _toolBox.ToggleErase();
 		else if (@event.IsActionPressed("save", false, true)) OnSimMenuItemPressed(1);
-		else if (@event.IsActionPressed("copy", false, true))
+		else if (@event.IsActionPressed("copy", false, true)) CopySelection();
+		else if (@event.IsActionPressed("paste", false, true)) BeginPaste();
+		else if (@event.IsActionPressed("ui_cancel", false, true))
 		{
-			if (_roads.TryGetSelection(out Vector2I min, out Vector2I max))
-			{
-				// TODO: build clipboard data
-				// likely using existing json implementation?
-			}
+			if (_paste.IsActive) _paste.Cancel();
+			else _roads.ClearSelection();
 		}
-		else if (@event.IsActionPressed("ui_cancel", false, true)) _roads.ClearSelection();
+		else if (@event.IsActionPressed("delete_selection", false, true))
+		{
+			if (_scenario.DeleteSelection(out string error) && error != "")
+				_inspector.SetMessage(error);
+		}
 		else return;
 
 		GetViewport().SetInputAsHandled();
@@ -175,6 +180,20 @@ public partial class UIRoot : CanvasLayer
 		if (!_structures.TryRemove(_structures.Selected, out string error))
 			_inspector.SetMessage(error);
 	}
+
+	private void CopySelection()
+	{
+		ScenarioData data = _scenario.CaptureSelection();
+		if (data == null) return; // keep the user's existing clipboard
+        DisplayServer.ClipboardSet(ScenarioSerializer.ToJson(data));
+        _roads.ClearSelection();
+    }
+
+    private void BeginPaste()
+    {
+        _toolBox.SelectTool(ToolType.None);   // fires ToolChanged, which cancels any old paste
+        ReportErrors(_paste.Begin());
+    }
 
 	// starts a run or pauses and resumes the current run
 	private void StartSimulation()

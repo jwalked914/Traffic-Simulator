@@ -2,7 +2,6 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
 
 
 
@@ -59,11 +58,10 @@ public partial class RoadGraph : Node2D
 
 	public IReadOnlyList<RoadSegment> Segments => _roadNetwork?.Segments ?? Array.Empty<RoadSegment>();
 	public bool IsRectDragging => _isDraggingRect;
-	public bool IsEraseHoverVisible => _showHover;
 
 	public bool HasSelection => _hasSelection;
 	public event Action SelectionChanged;
-	public IReadOnlyCollection<Vector2I> SelectedRoadCells => _selectedRoadCells;
+	public IReadOnlySet<Vector2I> SelectedRoadCells => _selectedRoadCells;
 	public IReadOnlyList<Structure> SelectedStructures => _selectedStructures;
 
 
@@ -709,29 +707,23 @@ public partial class RoadGraph : Node2D
 		maxCell = new Vector2I(Math.Max(_rectStartCell.X, _rectEndCell.X), Math.Max(_rectStartCell.Y, _rectEndCell.Y));
 	}
 
-	// removes segments within the box
-	// TODO: fix splitting segments at an interior point
-	// specifically, lane connections will be funky
-	private void DeleteRoadCellsInSelection()
+	// takes any cell test
+	public void DeleteRoadCellsWhere(Func<Vector2I, bool> inside)
 	{
-		if (_roadNetwork == null)
-		{
-			return;
-		}
-		GetRectBounds(out Vector2I minCell, out Vector2I maxCell);
+		if (_roadNetwork == null) return;
 
 		var segmentsSnapshot = _roadNetwork.Segments.ToList();
 		bool changed = false;
 
 		foreach (RoadSegment segment in segmentsSnapshot)
-		{
+ {
 			var remainingRuns = new List<List<Vector2I>>();
 			var currentRun = new List<Vector2I>();
 			bool segmentWasAffected = false;
 
 			foreach (Vector2I cell in segment.Path)
 			{
-				bool insideSelection = cell.X >= minCell.X && cell.X <= maxCell.X && cell.Y >= minCell.Y && cell.Y <= maxCell.Y;
+				bool insideSelection = inside(cell);
 
 				if (insideSelection)
 				{
@@ -762,10 +754,16 @@ public partial class RoadGraph : Node2D
 			changed = true;
 		}
 
-		if (changed)
-		{
-			NotifyRoadsChanged();
-		}
+		if (changed) NotifyRoadsChanged();
+	}
+
+	// removes segments within the box
+	private void DeleteRoadCellsInSelection()
+	{
+		GetRectBounds(out Vector2I min, out Vector2I max);
+		DeleteRoadCellsWhere(c => c.X >= min.X && c.X <= max.X && c.Y >= min.Y && c.Y <= max.Y);
+
+
 
 	}
 
@@ -805,7 +803,7 @@ public partial class RoadGraph : Node2D
 		GD.Print("Cell conversion passed successfully.");
 	}
 
-	// tracks the cell under the cursor while erasing so it can be highlighted
+	// tracks the cell under the cursor so it can be highlighted
 	private void UpdateHover()
 	{
 		bool show = !_ui.IsSimulating && !_isDraggingRect && GetViewport().GuiGetHoveredControl() == null;
