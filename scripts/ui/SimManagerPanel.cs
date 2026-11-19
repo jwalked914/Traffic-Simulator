@@ -50,11 +50,11 @@ public partial class SimManagerPanel : Control
 	}
 
 	// shows the run state and driver counts
-	public void Refresh(bool active, int spawned, int drivers, int arrived)
+	public void Refresh(bool active, int spawned, int drivers, int arrived, int returned = 0)
 	{
 		_startsim.Icon = _simclock.Running ? _pauseIcon : _playIcon;
 		_startsim.TooltipText = _simclock.Running ? "Pause simulation" : active ? "Resume simulation" : "Start simulation";
-		_startsim.TooltipText += $"\nCreated: {spawned}  |  Active: {drivers}  |  Arrived: {arrived}";
+		_startsim.TooltipText += $"\nCreated: {spawned}  |  Active: {drivers}  |  Consumed: {arrived}  |  Returned home: {returned}";
 		_stopsim.Disabled = !active;
 		_flag.Disabled = !_simclock.Running;
 		_status.Hide();
