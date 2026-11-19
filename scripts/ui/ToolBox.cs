@@ -85,6 +85,15 @@ public partial class ToolBox : Control
 
 		EmitSignal(SignalName.ToolSelected, (int)tool);
 	}
+	
+	// toggles erase on/off, as if the erase button was clicked
+	public void ToggleErase()
+	{
+		Button erase = _buttons[ToolType.Erase];
+		if (erase.Disabled) return; // locked while simulating
+
+		SelectTool(erase.ButtonPressed ? ToolType.None : ToolType.Erase);
+	}
 
 	// locks the tools while the simulation runs
 	public void SetDisabled(bool disabled)

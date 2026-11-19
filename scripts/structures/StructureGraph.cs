@@ -313,7 +313,7 @@ public partial class StructureGraph : Node2D
 	{
 		Vector2I hoveredCell = _roads.GlobalToCell(GetGlobalMousePosition());
 		bool showPreview = _ui.CurrentTool == ToolType.Structure && Selected == null &&
-			!_roads.IsDeleteSelecting && GetViewport().GuiGetHoveredControl() == null;
+			!_roads.IsRectDragging && GetViewport().GuiGetHoveredControl() == null;
 		bool previewChanged = showPreview != _showPreview;
 		bool hoveredCellChanged = hoveredCell != _hoverCell;
 
@@ -332,7 +332,7 @@ public partial class StructureGraph : Node2D
 		if (_ui.IsSimulating) return;
 		if (@event is InputEventKey key && key.Pressed && !key.Echo &&
 			(key.PhysicalKeycode == Key.R || key.Keycode == Key.R) && Selected == null &&
-			_ui.CurrentTool == ToolType.Structure && !_roads.IsDeleteSelecting &&
+			_ui.CurrentTool == ToolType.Structure && !_roads.IsRectDragging &&
 			!key.CtrlPressed && !key.AltPressed && !key.MetaPressed &&
 			GetViewport().GuiGetFocusOwner() is not LineEdit and not TextEdit)
 		{
@@ -347,7 +347,7 @@ public partial class StructureGraph : Node2D
 			return;
 		}
 		if (@event is not InputEventMouseButton mouse || mouse.ButtonIndex != MouseButton.Left ||
-			!mouse.Pressed || mouse.ShiftPressed || _roads.IsDeleteSelecting) return;
+			!mouse.Pressed || mouse.ShiftPressed || _roads.IsRectDragging) return;
 		if (_ui.CurrentTool != ToolType.Structure && _ui.CurrentTool != ToolType.None) return;
 
 		Vector2I cell = _roads.GlobalToCell(GetGlobalMousePosition());
