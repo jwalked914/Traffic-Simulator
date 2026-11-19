@@ -15,11 +15,15 @@ public partial class SimManagerPanel : Control
 	private Label _simtime;
 	private Label _status;
 	private CheckpointTimeline _timeline;
+	private HSlider _speedSlider;
+	private Label _speedValue;
+	private static readonly float[] Speeds = { 1f, 2f, 4f, 8f};
 
 	// connects the simulation buttons, time display, and checkpoint timeline
 	public override void _Ready()
 	{
 		const string row = "PanelContainer/Content/HBoxContainer/";
+		const string speedRow = "PanelContainer/Content/SpeedRow/";
 		_simclock = GetNode<SimClock>("../../World/SimClock");
 		_startsim = GetNode<Button>(row + "StartSimButton");
 		_stopsim = GetNode<Button>(row + "StopSimButton");
@@ -27,11 +31,15 @@ public partial class SimManagerPanel : Control
 		_simtime = GetNode<Label>(row + "ClockColumn/SimTimeLabel");
 		_timeline = GetNode<CheckpointTimeline>(row + "ClockColumn/CheckpointTimeline");
 		_status = GetNode<Label>("PanelContainer/Content/Status");
-
 		_timeline.Clock = _simclock;
 		_startsim.Pressed += () => ToggleRequested?.Invoke();
 		_stopsim.Pressed += () => StopRequested?.Invoke();
 		_flag.Pressed += _simclock.AddCheckpoint;
+
+		_speedSlider = GetNode<HSlider>(speedRow + "SpeedSlider");
+		_speedValue = GetNode<Label>(speedRow + "SpeedValue");
+		_speedSlider.ValueChanged += v => _simclock.SetSpeed(Speeds[(int)v]);
+
 	}
 
 	// updates the time readout and moves the timeline marker every frame
@@ -42,14 +50,17 @@ public partial class SimManagerPanel : Control
 	}
 
 	// shows the run state and driver counts
-	public void Refresh(bool active, int spawned, int drivers, int arrived)
+	public void Refresh(bool active, int spawned, int drivers, int arrived, int returned = 0)
 	{
 		_startsim.Icon = _simclock.Running ? _pauseIcon : _playIcon;
 		_startsim.TooltipText = _simclock.Running ? "Pause simulation" : active ? "Resume simulation" : "Start simulation";
-		_startsim.TooltipText += $"\nCreated: {spawned}  |  Active: {drivers}  |  Arrived: {arrived}";
+		_startsim.TooltipText += $"\nCreated: {spawned}  |  Active: {drivers}  |  Consumed: {arrived}  |  Returned home: {returned}";
 		_stopsim.Disabled = !active;
 		_flag.Disabled = !_simclock.Running;
 		_status.Hide();
+		
+		_speedSlider.SetValueNoSignal(Array.IndexOf(Speeds, _simclock.Speed));
+		_speedValue.Text = $"{_simclock.Speed}x";
 	}
 
 	// shows a message under the controls
@@ -58,4 +69,6 @@ public partial class SimManagerPanel : Control
 		_status.Text = message;
 		_status.Show();
 	}
+
+	
 }

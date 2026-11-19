@@ -278,6 +278,9 @@ public partial class InspectorPanel : Control
         _deleteButton.Visible = hasSelection;
         _newButton.Visible = hasSelection;
 
+        _detailsLabel.Visible = ChosenType != StructureType.House;
+        if (!_detailsLabel.Visible) return;
+
         if (Structure.IsTrafficEndpoint(ChosenType))
         {
             _detailsLabel.Text = _selectedStructure?.IsConnected == true
@@ -286,20 +289,10 @@ public partial class InspectorPanel : Control
             return;
         }
 
-        if (ChosenType == StructureType.House)
-        {
-            string access = _selectedStructure?.IsConnected == true
-				? $"Road access: {_selectedStructure.AccessCell}"
-				: "Connect a road next to the house's front edge.";
-            _detailsLabel.Text = access + "TODO";
-            return;
-        }
-
         if (_selectedStructure == null)
         {
             var parking = new ParkingLayout(Vector2I.Zero, ChosenSize, ChosenParkingRows, _cellSize, _roadWidth);
-            _detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n" +
-				"Connect a road at the lot's entrance.";
+            _detailsLabel.Text = $"Parking capacity: {parking.Capacity}\n";
             return;
         }
 

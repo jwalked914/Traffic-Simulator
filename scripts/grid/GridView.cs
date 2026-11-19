@@ -7,18 +7,13 @@ public partial class GridView : Node2D
 
 	[ExportGroup("Grid")]
 	[Export] public float GridLineWidth { get; set; } = 1.0f;
-	[Export] public float HoverInset { get; set; } = 6.0f;
-	[Export] public float HoverOutlineWidth { get; set; } = 2.0f;
 
 	[ExportGroup("Ground Colors")]
 	[Export] public Color BackgroundColor { get; set; } = new Color(0.92f, 0.965f, 0.945f);
 	[Export] public Color GrassPatchColor { get; set; } = new Color(0.78f, 0.89f, 0.81f, 0.45f);
 	[Export] public Color GridLineColor { get; set; } = new Color(0.63f, 0.76f, 0.69f, 0.30f);
-	[Export] public Color HoverFillColor { get; set; } = new Color(0.120f, 0.470f, 0.950f, 0.180f);
-	[Export] public Color HoverOutlineColor { get; set; } = new Color(0.250f, 0.620f, 1.000f, 0.900f);
 
 	private RoadGraph _roadGraph;
-	private Vector2I _hoveredCell;
 	private readonly RandomNumberGenerator _groundRandom = new();
 	private readonly StyleBoxFlat _grassStyle = new();
 	public bool EditingEnabled { get; private set; } = true;
@@ -40,14 +35,13 @@ public partial class GridView : Node2D
 		QueueRedraw();
 	}
 
-	// follows the camera and updates the hovered cell
+	// follows the camera
 	public override void _Process(double delta)
 	{
-		if (EditingEnabled) UpdateHoveredCell();
 		QueueRedraw();
 	}
 
-	// switches the editing grid and hover indicator
+	// switches the editing grid
 	public void SetEditingEnabled(bool enabled)
 	{
 		if (EditingEnabled == enabled) return;
@@ -83,13 +77,16 @@ public partial class GridView : Node2D
 		int maxY = Mathf.CeilToInt(visibleBounds.End.Y / cellSize) + 1;
 
 		DrawGridLines(minX, maxX, minY, maxY, visibleBounds, cellSize);
-		DrawHoveredCell();
 	}
 
 	// keeps the grass patches in the same world positions as the camera moves
 	private void DrawGround(Rect2 bounds, float cellSize)
 	{
-		DrawRect(bounds.Grow(cellSize), BackgroundColor);
+		Color groundColor = DesignSettings.DarkMode
+			? new Color(0.04f, 0.12f, 0.075f)
+			: BackgroundColor;
+
+		DrawRect(bounds.Grow(cellSize), groundColor);
 		_grassStyle.BgColor = GrassPatchColor;
 		_grassStyle.SetCornerRadiusAll(Mathf.RoundToInt(cellSize * 0.08f));
 		float spacing = cellSize * 3.0f;
@@ -144,32 +141,6 @@ public partial class GridView : Node2D
 		}
 	}
 
-	// converts mouse's world position to the cell currently being hovered over
-	private void UpdateHoveredCell()
-	{
-		_hoveredCell = _roadGraph.GlobalToCell(GetGlobalMousePosition());
-	}
-
-	// draws a hover indicator on the hovered cell
-	private void DrawHoveredCell()
-	{
-		if (_roadGraph.IsDeleteSelecting)
-		{
-			return;
-		}
-
-		Rect2 cellRect = _roadGraph.GetCellLocalRect(_hoveredCell);
-
-		float inset = ScreenPixelsToLocal(HoverInset);
-		float maxInset = _roadGraph.CellSize * 0.25f;
-		inset = Mathf.Min(inset, maxInset);
-
-		float outlineWidth = ScreenPixelsToLocal(HoverOutlineWidth);
-		Rect2 hoverRect = cellRect.Grow(-inset);
-
-		DrawRect(hoverRect, HoverFillColor);
-		DrawRect(hoverRect, HoverOutlineColor, false, outlineWidth, true);
-	}
 
 	// converts pixel measurements to local space
 	// this ensures that the drawn elements remain consistent as the camera zooms in and out

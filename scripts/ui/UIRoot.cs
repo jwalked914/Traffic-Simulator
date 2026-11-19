@@ -18,6 +18,9 @@ public partial class UIRoot : CanvasLayer
 	private SimManagerPanel _simulationPanel;
 	private ScenarioManager _scenario;
 	private GridView _grid;
+	private RoadGraph _roads;
+	private PasteController _paste;
+	private SettingsPopup settingsWindow;
 
 	// save/load dialogs
 	private FileDialog _fileDialog;
@@ -39,14 +42,23 @@ public partial class UIRoot : CanvasLayer
 		_scenario = GetNode<ScenarioManager>("../World/ScenarioManager");
 		_grid = GetNode<GridView>("../World/GridView");
 		_simulationPanel = GetNode<SimManagerPanel>("SimManagerPanel");
+		_paste = GetNode<PasteController>("../World/PasteController");
+		settingsWindow = new SettingsPopup();
+		AddChild(settingsWindow);
 
 		_simulationPanel.ToggleRequested += StartSimulation;
 		_simulationPanel.StopRequested += StopSimulation;
 		_drivers.StateChanged += RefreshSimulationControls;
 		_clock.StateChanged += RefreshSimulationControls;
+		_clock.DayEnded += OnDayEnded;
 
-		var roads = GetNode<RoadGraph>("../World/RoadGraph");
-		_inspector.SetParkingScale(roads.CellSize, roads.RoadWidth);
+		_roads = GetNode<RoadGraph>("../World/RoadGraph");
+		_inspector.SetParkingScale(_roads.CellSize, _roads.RoadWidth);
+		//connect road settings to rod graph
+		_inspector.RoadSettingsChanged += OnRoadSettingsChanged;
+
+		//apply starting speed limit
+		_roads.SetSpeedLimit(_inspector.SpeedLimit);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
 
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
@@ -76,7 +88,7 @@ public partial class UIRoot : CanvasLayer
 		_structures.SelectionChanged += OnStructureSelected;
 		_structures.StructuresChanged += _inspector.RefreshDetails;
 		_structures.PlacementRejected += _inspector.SetMessage;
-		
+
 		// load a scenario selected from the main menu, if one was selected
 		string path = ScenarioLoadRequest.PendingPath;
 		if (!string.IsNullOrEmpty(path))
@@ -90,15 +102,48 @@ public partial class UIRoot : CanvasLayer
 		RefreshSimulationControls();
 	}
 
+	// handles all keyboard shortcuts
+	public override void _UnhandledKeyInput(InputEvent @event)
+	{
+		if (@event is not InputEventKey { Pressed: true }) return;
+		if (IsSimulating) return; // editing shortcuts are off during a run
+
+		if (@event.IsActionPressed("toggle_erase", false, true)) _toolBox.ToggleErase();
+		else if (@event.IsActionPressed("save", false, true)) OnSimMenuItemPressed(1);
+		else if (@event.IsActionPressed("copy", false, true)) CopySelection();
+		else if (@event.IsActionPressed("paste", false, true)) BeginPaste();
+		else if (@event.IsActionPressed("ui_cancel", false, true))
+		{
+			if (_paste.IsActive) _paste.Cancel();
+			else _roads.ClearSelection();
+		}
+		else if (@event.IsActionPressed("delete_selection", false, true))
+		{
+			if (_scenario.DeleteSelection(out string error) && error != "")
+				_inspector.SetMessage(error);
+		}
+		else return;
+
+		GetViewport().SetInputAsHandled();
+	}
+
+	//gets road settings whenever inspector changes
+	private void OnRoadSettingsChanged(int lanesPerDirections, int speedLimit)
+	{
+		_roads.SetSpeedLimit(speedLimit);
+	}
+
 	// disconnects updates when leaving the simulator
 	public override void _ExitTree()
 	{
 		if (_structures == null) return;
+		_inspector.RoadSettingsChanged -= OnRoadSettingsChanged;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;
 		_drivers.StateChanged -= RefreshSimulationControls;
 		_clock.StateChanged -= RefreshSimulationControls;
+		_clock.DayEnded -= OnDayEnded;
 		_simulationPanel.ToggleRequested -= StartSimulation;
 		_simulationPanel.StopRequested -= StopSimulation;
 	}
@@ -136,12 +181,26 @@ public partial class UIRoot : CanvasLayer
 			_inspector.SetMessage(error);
 	}
 
+	private void CopySelection()
+	{
+		ScenarioData data = _scenario.CaptureSelection();
+		if (data == null) return; // keep the user's existing clipboard
+        DisplayServer.ClipboardSet(ScenarioSerializer.ToJson(data));
+        _roads.ClearSelection();
+    }
+
+    private void BeginPaste()
+    {
+        _toolBox.SelectTool(ToolType.None);   // fires ToolChanged, which cancels any old paste
+        ReportErrors(_paste.Begin());
+    }
+
 	// starts a run or pauses and resumes the current run
 	private void StartSimulation()
 	{
 		if (!_drivers.IsRunning)
 		{
-			if (!_drivers.TryStart(60, out string error))
+			if (!_drivers.TryStart(_clock.SpawnWindowSeconds, out string error))
 			{
 				_simulationPanel.SetMessage(error);
 				return;
@@ -164,6 +223,7 @@ public partial class UIRoot : CanvasLayer
 		if (!IsSimulating && _clock.Running) _clock.Toggle();
 		_drivers.ProcessMode = _clock.Running ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
 		_toolBox.SetDisabled(IsSimulating);
+		_toolBox.Visible = !IsSimulating;
 		_grid.SetEditingEnabled(!IsSimulating);
 		if (IsSimulating)
 		{
@@ -173,7 +233,7 @@ public partial class UIRoot : CanvasLayer
 			}
 			_inspector.Hide();
 		}
-		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount);
+		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount, _drivers.ReturnedCount);
 	}
 
 	private void OnSimMenuItemPressed(long id)
@@ -212,7 +272,8 @@ public partial class UIRoot : CanvasLayer
 				GetTree().ChangeSceneToFile(MainMenuScene);
 				break;
 
-			case 6: // settings?
+			case 6: // settings
+				settingsWindow.ShowSettings();
 				break;
 
 			case 7: // close app
@@ -265,5 +326,11 @@ public partial class UIRoot : CanvasLayer
 		if (result.Success) return;
 		_messageDialog.DialogText = string.Join("\n", result.Errors.Take(10));
 		_messageDialog.PopupCentered();
+	}
+
+	private void OnDayEnded()
+	{
+		StopSimulation();
+		_simulationPanel.SetMessage("Day complete.");
 	}
 }

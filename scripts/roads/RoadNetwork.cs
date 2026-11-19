@@ -38,14 +38,14 @@ public class RoadNetwork
 
 	// Creates a segment between two cells, allocates its lanes, and wires those lanes
 	// into the junctions at the endpoints.
-	public RoadSegment AddSegment(Vector2I a, Vector2I b)
+	public RoadSegment AddSegment(Vector2I a, Vector2I b, float speedLimit = 35.0f)
 		{
-			return AddSegment(new List<Vector2I> { a, b });
+			return AddSegment(new List<Vector2I> { a, b }, speedLimit);
 		}
 
-	public RoadSegment AddSegment(IReadOnlyList<Vector2I> path)
+	public RoadSegment AddSegment(IReadOnlyList<Vector2I> path, float speedLimit = 35.0f)
 	{
-		var segment = new RoadSegment(path);
+		var segment = new RoadSegment(path, speedLimit);
 		CreateLanesForSegment(segment);
 
 		RoadJunction junctionA = GetOrCreateJunction(segment.A);
@@ -62,7 +62,7 @@ public class RoadNetwork
 	}
 	
 	// splits a dragged path at junctions and skips road sections already occupied
-	public List<RoadSegment> AddPath(IReadOnlyList<Vector2I> path)
+	public List<RoadSegment> AddPath(IReadOnlyList<Vector2I> path, float speedLimit = 35.0f)
 	{
 		var created = new List<RoadSegment>();
 		if (path.Count < 2) return created;
@@ -98,7 +98,7 @@ public class RoadNetwork
 				connectionsPerCell[path[i + 1]] > 2;
 			if (endPiece)
 			{
-				if (current.Count > 1) created.Add(AddSegment(current));
+				if (current.Count > 1) created.Add(AddSegment(current, speedLimit));
 				current = new List<Vector2I> { path[i + 1] };
 			}
 		}
@@ -166,10 +166,14 @@ public class RoadNetwork
 			
 			var first = segment.Path.Take(index + 1).ToList();
 			var second = segment.Path.Skip(index).ToList();
+
+			//save speed limit before splitting
+			float originalSpeedLimit = segment.SpeedLimit;
 			
 			RemoveSegment(segment);
-			AddSegment(first);
-			AddSegment(second);
+
+			AddSegment(first, originalSpeedLimit);
+			AddSegment(second, originalSpeedLimit);
 			return;
 		}
 	}
@@ -191,10 +195,10 @@ public class RoadNetwork
 		for (int i = 0; i < DefaultLanesPerDirection; i++)
 		{
 			LaneID abID = _laneGraph.CreateLaneID();
-			segment.LanesAtoB.Add(new Lane(abID, i, LaneType.Driving, 0.0f));
+			segment.LanesAtoB.Add(new Lane(abID, i, LaneType.Driving, segment.SpeedLimit));
 
 			LaneID baID = _laneGraph.CreateLaneID();
-			segment.LanesBtoA.Add(new Lane(baID, i, LaneType.Driving, 0.0f));
+			segment.LanesBtoA.Add(new Lane(baID, i, LaneType.Driving, segment.SpeedLimit));
 		}
 	}
 

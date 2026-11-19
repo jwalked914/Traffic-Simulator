@@ -14,6 +14,9 @@ public class ScenarioData
 public class RoadData
 {
 	public List<int[]> Path {get; set;} = new();
+
+	///save speedlimit for roads too but old saves default to 35mph
+	public float SpeedLimit { get; set; } = 35.0f;
 }
 
 public class StructureData

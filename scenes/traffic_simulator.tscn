@@ -10,6 +10,7 @@
 [ext_resource type="Script" uid="uid://bjg1naut2jqob" path="res://scripts/drivers/DriverSpawner.cs" id="5_ptuai"]
 [ext_resource type="Script" uid="uid://cmh3ptoh6qq2f" path="res://scripts/sim/SimClock.cs" id="6_clock"]
 [ext_resource type="Script" uid="uid://cjv00jx7ahpxp" path="res://scripts/persistence/ScenarioManager.cs" id="7_scenario"]
+[ext_resource type="Script" uid="uid://dkm78t155j5xy" path="res://scripts/editing/PasteController.cs" id="8_w1ijn"]
 
 [node name="TrafficSimulator" type="Node2D" unique_id=1027597209]
 
@@ -34,6 +35,9 @@ script = ExtResource("6_clock")
 
 [node name="ScenarioManager" type="Node" parent="World" unique_id=1158047812]
 script = ExtResource("7_scenario")
+
+[node name="PasteController" type="Node2D" parent="World" unique_id=1110072126]
+script = ExtResource("8_w1ijn")
 
 [node name="Camera2D" type="Camera2D" parent="." unique_id=1600570113]
 visible = false

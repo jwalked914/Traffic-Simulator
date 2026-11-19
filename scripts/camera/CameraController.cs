@@ -25,8 +25,14 @@ public partial class CameraController : Camera2D
 
 	public override void _Process(double delta)
 	{
+		// added to prevent simulation speed from movement speed
+		delta /= Engine.TimeScale;
+		
 		// get movement input from the player
-		Vector2 movement = Input.GetVector("move_left", "move_right", "move_up", "move_down");
+		bool chord = Input.IsKeyPressed(Key.Ctrl) || Input.IsKeyPressed(Key.Alt) || Input.IsKeyPressed(Key.Meta);
+		Vector2 movement = chord ? Vector2.Zero : Input.GetVector("move_left", "move_right", "move_up", "move_down");
+		
+		
 
 		// check fast camera key and apply multiplier
 		float speedMultiplier = Input.IsActionPressed("fast_camera") ? SprintMultiplier : 1f;

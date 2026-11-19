@@ -166,6 +166,10 @@ public class Structure
 		return path;
 	}
 
+	internal Vector2[] GetParkingApproachPath() => RotatePath(Parking.GetApproachPath(GetOriginalAccessCell()));
+
+	internal Vector2[] GetParkingPathFromQueue(int index) => RotatePath(Parking.GetPathFromQueue(index));
+
 	public Vector2[] GetParkingEntryPath(int index)
 	{
 		if (!IsConnected)
@@ -228,6 +232,8 @@ public class Structure
 		ExitLane = null;
 		_nextFreeSpace = 0;
 	}
+
+	internal int GetReservedSpace(long vehicleId) => _reservations[vehicleId];
 
 	public bool IsSpaceReserved(int index) => _reservedSpaces.Contains(index);
 	
