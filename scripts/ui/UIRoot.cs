@@ -233,7 +233,7 @@ public partial class UIRoot : CanvasLayer
 			}
 			_inspector.Hide();
 		}
-		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount);
+		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount, _drivers.ReturnedCount);
 	}
 
 	private void OnSimMenuItemPressed(long id)

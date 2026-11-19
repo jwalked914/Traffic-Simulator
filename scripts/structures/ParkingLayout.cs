@@ -70,37 +70,46 @@ public class ParkingLayout
 		return new Rect2(new Vector2(_spacesLeft + column * SpaceSize.X, top), SpaceSize);
 	}
 
-	// reaches a space through the aisles without crossing other spaces
-	public Vector2[] GetEntryPath(int index, Vector2I accessCell)
+	// brings arriving cars into the lower lane to wait beside the stalls
+	public Vector2[] GetApproachPath(Vector2I accessCell)
+	{
+		Vector2 road = GridMath.CellToLocalCenter(accessCell, _cellSize);
+		road.X += AisleWidth / 6;
+		float queueY = Lot.End.Y - AisleWidth * 0.25f;
+		return new[] { road, new Vector2(road.X, queueY), new Vector2(SideAisle.GetCenter().X, queueY) };
+	}
+
+	public Vector2[] GetEntryPath(int index, Vector2I accessCell) =>
+		[.. GetApproachPath(accessCell), .. GetPathFromQueue(index)];
+
+	// turns from the queue into the lane beside the stalls
+	public Vector2[] GetPathFromQueue(int index)
+	{
+		Vector2 space = GetSpaceRect(index).GetCenter();
+		float sideX = SideAisle.GetCenter().X;
+		float aisleY = GetAisleRect(index / Columns).End.Y - AisleWidth * 0.75f;
+		return new[] { new Vector2(sideX, aisleY), new Vector2(space.X, aisleY), space };
+	}
+
+	// uses the other side of the driveway so arriving cars can pass
+	public Vector2[] GetExitPath(int index, Vector2I accessCell)
 	{
 		Vector2 space = GetSpaceRect(index).GetCenter();
 		Vector2 road = GridMath.CellToLocalCenter(accessCell, _cellSize);
+		road.X -= AisleWidth / 6;
 		int row = index / Columns;
-		float bottomAisle = GetAisleRect(0).GetCenter().Y;
-		float targetAisle = GetAisleRect(row).GetCenter().Y;
-
+		float exitY = Lot.End.Y - AisleWidth * 0.75f;
 		if (row == 0)
 		{
-			return new[] { road, new Vector2(road.X, bottomAisle), new Vector2(space.X, targetAisle), space };
+			return new[] { space, new Vector2(space.X, exitY), new Vector2(road.X, exitY), road };
 		}
 
-		float sideAisle = SideAisle.GetCenter().X;
+		float aisleY = GetAisleRect(row).End.Y - AisleWidth * 0.75f;
+		float sideX = SideAisle.GetCenter().X;
 		return new[]
 		{
-			road,
-			new Vector2(road.X, bottomAisle),
-			new Vector2(sideAisle, bottomAisle),
-			new Vector2(sideAisle, targetAisle),
-			new Vector2(space.X, targetAisle),
-			space
+			space, new Vector2(space.X, aisleY), new Vector2(sideX, aisleY),
+			new Vector2(sideX, exitY), new Vector2(road.X, exitY), road
 		};
-	}
-
-	// follows the same clear aisles back to the road
-	public Vector2[] GetExitPath(int index, Vector2I accessCell)
-	{
-		Vector2[] path = GetEntryPath(index, accessCell);
-		Array.Reverse(path);
-		return path;
 	}
 }

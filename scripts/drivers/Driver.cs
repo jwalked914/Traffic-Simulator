@@ -132,6 +132,9 @@ public partial class Driver : Node2D
 
     // The next waypoint the driver is going to
     private int _currentWaypoint = 0;
+    internal int NextWaypoint => _currentWaypoint;
+    internal int WaypointCount => _waypoints.Count;
+    private bool _backOut;
 
     //other Drivers currently in the simulation
     private IEnumerable<Driver> _otherDrivers;
@@ -162,7 +165,7 @@ public partial class Driver : Node2D
         foreach (Driver other in _otherDrivers)
         {
             //prevent checking itself
-            if(other == this || !other.IsMoving)
+            if (other == this || (!other.IsMoving && !other.IsWaitingInLane))
             {
                 continue;
             }
@@ -180,7 +183,7 @@ public partial class Driver : Node2D
             bool directionCross = directionDot < 0.866f;
 
             //handle cars in deadlock crossing
-            if (directionCross && distance < IntersectionConflictDistance)
+            if (other.IsMoving && directionCross && distance < IntersectionConflictDistance)
             {
                 //lower driver id gets temp priority
                 if (DriverId < other.DriverId)
@@ -218,6 +221,7 @@ public partial class Driver : Node2D
 
     // true when route to follow
     public bool IsMoving { get; private set; } = false;
+    internal bool IsWaitingInLane { get; set; }
 
     public void SetLaneWaypoints(
         IEnumerable<Vector2> waypoints,
@@ -251,6 +255,16 @@ public partial class Driver : Node2D
             }
             else
             {
+                Vector2 incoming = (points[i] - points[i - 1]).Normalized();
+                Vector2 outgoing = (points[i + 1] - points[i]).Normalized();
+                float corner = 1.0f + incoming.Dot(outgoing);
+                if (corner > 0.5f)
+                {
+                    // keep the corner aligned with both lane edges
+                    Vector2 turn = (incoming + outgoing) / corner;
+                    offsetPoints.Add(points[i] + new Vector2(-turn.Y, turn.X) * laneOffset);
+                    continue;
+                }
                 tangent = points[i + 1] - points[i - 1];
             }
 
@@ -283,10 +297,12 @@ public partial class Driver : Node2D
     //set waypoints with speed limit
     public void SetWaypoints(
         IEnumerable<Vector2> waypoints,
-        IEnumerable<float> speedLimits)
+        IEnumerable<float> speedLimits,
+        bool backOut = false)
     {
         _waypoints.Clear();
         _waypoints.AddRange(waypoints);
+        _backOut = backOut;
 
         _waypointSpeedLimits.Clear();
         _waypointSpeedLimits.AddRange(speedLimits);
@@ -307,11 +323,35 @@ public partial class Driver : Node2D
         }
     }
 
+    internal void ContinueWaypoints(IEnumerable<Vector2> waypoints)
+    {
+        foreach (Vector2 waypoint in waypoints)
+        {
+            _waypoints.Add(waypoint);
+            _waypointSpeedLimits.Add(35.0f);
+        }
+        IsMoving = _currentWaypoint < _waypoints.Count;
+    }
+
+    internal float GetRemainingRouteDistance()
+    {
+        float distance = 0;
+        Vector2 position = GlobalPosition;
+        for (int i = _currentWaypoint; i < _waypoints.Count; i++)
+        {
+            distance += position.DistanceTo(_waypoints[i]);
+            position = _waypoints[i];
+        }
+        return distance;
+    }
+
     public void SetTunnelOpenings(Vector2 source, Vector2 sourceDirection, Vector2 consumer, Vector2 consumerDirection)
     {
         _sourceOpening = source;
         _sourceDirection = sourceDirection;
         _hasTunnelOpenings = true;
+        _hasLeftTunnel = false;
+        _enteringTunnel = false;
         CarGraphics.SetTunnelOpenings(source, sourceDirection, consumer, consumerDirection);
     }
 
@@ -360,15 +400,17 @@ public partial class Driver : Node2D
         }
 
         // face forward to route
-        Rotation = direction.Angle();
+        bool reversing = _backOut && _currentWaypoint == 1;
+        Rotation = (reversing ? -direction : direction).Angle();
 
         //update speed based on speed limit
         int speedIndex = Mathf.Clamp(_currentWaypoint, 0, _waypointSpeedLimits.Count - 1);
 
         Speed = GetSpeedForLimit(_waypointSpeedLimits[speedIndex]);
 
-        //check for othe cars
+        // check for other cars
         float movementSpeed = GetMovementSpeed(direction.Normalized());
+        if (reversing) movementSpeed *= 0.5f;
 
         // move to next point with adjusted speed
         float distance = movementSpeed * (float)delta;
