@@ -439,6 +439,11 @@ public partial class StructureGraph : Node2D
 		{
 			ParkingLayout parking = structure?.Parking ?? new ParkingLayout(anchor, size, parkingRows, cellSize, _roads.RoadWidth);
 			DrawParkingSpaces(parking, structure);
+			DrawRoadAccess(parking.Lot.End.Y, ParkingColor, structure);
+		}
+		else
+		{
+			DrawRoadAccess(roof.End.Y, _roads.RoadColor, structure);
 		}
 		DrawBuilding(roof, type);
 
@@ -629,19 +634,24 @@ public partial class StructureGraph : Node2D
 		DrawRect(walkway, new Color(0.87f, 0.9f, 0.92f));
 	}
 
-	// draws the driveway to the building's connected road endpoint
-	// TODO: improve the look of this
-	private void DrawRoadAccess(Rect2 lot, Structure structure)
+	// joins the house or lot to the road
+	private void DrawRoadAccess(float frontY, Color color, Structure structure)
 	{
 		if (structure?.AccessCell is not Vector2I access)
 		{
 			return;
 		}
 
-		Vector2 roadCenter = _roads.CellToLocalCenter(access);
-		Vector2 entrance = new Vector2(roadCenter.X, lot.End.Y - 2);
-		DrawLine(entrance, roadCenter, new Color(0.97f, 0.99f, 1), _roads.RoadWidth + 4, true);
-		DrawLine(entrance, roadCenter, _roads.RoadColor, _roads.RoadWidth, true);
+		Vector2 roadCenter = structure.GetPlacementTransform().AffineInverse() * _roads.CellToLocalCenter(access);
+		float width = Mathf.Clamp(_roads.RoadWidth, 1, _roads.CellSize);
+		float roadEdge = roadCenter.Y - width * 0.5f;
+		// overlap the rounded road end so the background doesn't show through
+		DrawRect(new Rect2(roadCenter.X - width * 0.5f, frontY - 2, width, roadCenter.Y - frontY + 3), color);
+		if (structure.Parking != null)
+		{
+			DrawLine(new Vector2(roadCenter.X, frontY + 3), new Vector2(roadCenter.X, roadEdge - 3),
+				new Color(0.96f, 0.98f, 1, 0.75f), Mathf.Max(1, width * 0.04f), true);
+		}
 	}
 	
 	private int _batchDepth;

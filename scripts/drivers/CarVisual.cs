@@ -4,6 +4,7 @@ using Godot;
 public partial class CarVisual : Node2D
 {
 	public const float HalfLength = 15.0f;
+	public const float HalfWidth = 7.0f;
 	private static readonly Shader TunnelShader = GD.Load<Shader>("res://assets/shaders/traffic_endpoint.gdshader");
 	private ShaderMaterial _tunnelMaterial;
 	[Export]
@@ -25,7 +26,7 @@ public partial class CarVisual : Node2D
 
 		// Draw the main car body.
 		DrawRect(
-			new Rect2(-HalfLength, -7, HalfLength * 2, 14),
+			new Rect2(-HalfLength, -HalfWidth, HalfLength * 2, HalfWidth * 2),
 			CarColor
 		);
 
