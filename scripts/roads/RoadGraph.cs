@@ -198,6 +198,26 @@ public partial class RoadGraph : Node2D
 	public override void _UnhandledInput(InputEvent @event)
 	{
 		if (_roadNetwork == null || _ui.IsSimulating) return;
+
+		// junction tool: click once to place the premade 4-way
+		// SUBJECT TO CHANGE
+		if (_ui.CurrentTool == ToolType.Junction && !_isSelectingDelete &&
+			@event is InputEventMouseButton click &&
+			click.ButtonIndex == MouseButton.Left && !click.ShiftPressed)
+		{
+			if (click.Pressed)
+			{
+				Vector2I cell = GlobalToCell(GetGlobalMousePosition());
+				if (!TryPlaceFourWay(cell, out string error))
+				{
+					GD.Print($"Can't place intersection: {error}");
+				}
+			}
+			GetViewport().SetInputAsHandled();
+			return;
+		}
+
+
 		if (!_isDraggingRoad && !_isSelectingDelete &&
 			_ui.CurrentTool != ToolType.Road && _ui.CurrentTool != ToolType.Erase &&
 			!(@event is InputEventMouseButton deleteMouse && deleteMouse.ShiftPressed &&
@@ -381,6 +401,29 @@ public partial class RoadGraph : Node2D
     	QueueRedraw();
 
     	return true;
+	}
+
+	// places a premade 4-way intersection centered on a cell
+	public bool TryPlaceFourWay(Vector2I center, out string error)
+	{
+		error = "";
+		if (_roadNetwork == null || _ui.IsSimulating) return false;
+
+		List<List<Vector2I>> paths = RoadJunction.FourWayPaths(center);
+
+		foreach (List<Vector2I> path in paths)
+		{
+			if(!CanAddRoad(path, out error)) return false;
+		}
+
+		BeginBatch();
+		foreach(List<Vector2I>path in paths)
+		{
+			TryAddRoad(path, out _);
+		}
+		EndBatch();
+
+		return true;
 	}
 	// places the road that was shown in the preview
 	private void FinishRoadDrag()
