@@ -22,6 +22,9 @@ public partial class UIRoot : CanvasLayer
 	private PasteController _paste;
 	private SettingsPopup settingsWindow;
 
+	private AcceptDialog _resultsDialog;
+	private bool _simulationWasRunning;
+
 	// save/load dialogs
 	private FileDialog _fileDialog;
 	private ConfirmationDialog _confirmDiscard;
@@ -78,6 +81,12 @@ public partial class UIRoot : CanvasLayer
 
 		_messageDialog = new AcceptDialog { Title = "Scenario" };
 		AddChild(_messageDialog);
+
+		_resultsDialog = new AcceptDialog
+		{
+			Title = "Simulation Results"
+		};
+		AddChild(_resultsDialog);
 
 		_toolBox.ToolSelected += OnToolSelected;
 		_inspector.DraftChanged += _structures.SetDraft;
@@ -213,6 +222,9 @@ public partial class UIRoot : CanvasLayer
 	// clears traffic and returns to build mode
 	private void StopSimulation()
 	{
+		//prevent results popup if simulation didnt fully run because stopper
+		_simulationWasRunning = false;
+
 		_drivers.Reset();
 		_clock.Reset();
 	}
@@ -220,6 +232,9 @@ public partial class UIRoot : CanvasLayer
 	// updates the controls for the current simulation state
 	private void RefreshSimulationControls()
 	{
+		bool simulationFinished = _simulationWasRunning && !_drivers.IsRunning;
+		_simulationWasRunning = _drivers.IsRunning;
+
 		if (!IsSimulating && _clock.Running) _clock.Toggle();
 		_drivers.ProcessMode = _clock.Running ? ProcessModeEnum.Inherit : ProcessModeEnum.Disabled;
 		_toolBox.SetDisabled(IsSimulating);
@@ -234,6 +249,11 @@ public partial class UIRoot : CanvasLayer
 			_inspector.Hide();
 		}
 		_simulationPanel.Refresh(IsSimulating, _drivers.SpawnedCount, _drivers.ActiveCount, _drivers.ConsumedCount, _drivers.ReturnedCount);
+
+		if (simulationFinished)
+		{
+			ShowSimulationResults();
+		}
 	}
 
 	private void OnSimMenuItemPressed(long id)
@@ -328,9 +348,36 @@ public partial class UIRoot : CanvasLayer
 		_messageDialog.PopupCentered();
 	}
 
+	private void ShowSimulationResults()
+	{
+    	string results =
+        	$"TOTAL SCORE: {_drivers.TotalScore:F1} / 100\n\n" +
+
+        	$"SCORE BREAKDOWN\n" +
+        	$"Travel Time Score: {_drivers.TravelTimeScore:F1} / 25\n" +
+        	$"Congestion Score: {_drivers.CongestionScore:F1} / 25\n" +
+        	$"Vehicle Collision Score: {_drivers.OverlapScore:F1} / 25\n" +
+        	$"Completed Trips Score: {_drivers.CompletionScore:F1} / 25\n\n" +
+
+        	$"SIMULATION STATISTICS\n" +
+        	$"Vehicles Spawned: {_drivers.SpawnedCount}\n" +
+        	$"Completed Trips: {_drivers.CompletedTripCount}\n" +
+			$"Unfinished Trips: {_drivers.UnfinishedTripCount}\n" +
+        	$"Average Travel Time: {_drivers.AverageTravelTimeSeconds:F1} seconds\n" +
+        	$"Average Congestion: {_drivers.AverageCongestionPercent:F1}%\n" +
+        	$"Completion Rate: {_drivers.CompletionRatePercent:F1}%";
+
+    	_resultsDialog.DialogText = results;
+    	_resultsDialog.PopupCentered();
+	}
+
 	private void OnDayEnded()
 	{
-		StopSimulation();
+		if (_drivers.IsRunning)
+		{
+			_drivers.FinishSimulation();
+		}
+
 		_simulationPanel.SetMessage("Day complete.");
 	}
 }

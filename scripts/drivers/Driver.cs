@@ -20,6 +20,12 @@ public partial class Driver : Node2D
     //drivers speed
     public float Speed { get; private set; }
 
+    public double TravelTimeSeconds { get; private set; }
+    public double IdealTravelTimeSeconds { get; private set; }
+    public double CongestionTimeSeconds { get; private set; }
+    public double OverlapTimeSeconds { get; private set; }
+    public int OverlapEventCount { get; private set; }
+
     //start and destination
     // assigned by the producer's route to a consumer
     public LaneID? SourceLane { get; set; }
@@ -53,6 +59,29 @@ public partial class Driver : Node2D
         //convert mph to units for simulation
         // 35 mph, normal at 120 units per second
         return targetSpeed * (120.0f / 35.0f);
+    }
+
+    //calculate how long a rouet should take for travel time stats
+    private double CalculateIdealTravelTime (IReadOnlyList<Vector2> points, IReadOnlyList<float> speedLimits, bool reversingSegment = false)
+    {
+        double totalTime = 0;
+
+        for (int i = 1; i < points.Count; i++)
+        {
+            float distance = points[i-1].DistanceTo(points[i]);
+            float speed = GetSpeedForLimit(speedLimits[i]);
+
+            if (reversingSegment && i == 1)
+            {
+                speed *= 0.5f;
+            }
+
+            if (speed > 0)
+            {
+                totalTime += distance / speed;
+            }
+        }
+        return totalTime;
     }
 
     //car graphics
@@ -146,6 +175,12 @@ public partial class Driver : Node2D
     //distance for cars crossing directions
     private const float IntersectionConflictDistance = 36.0f;
 
+    private const float CarHalfLength = 15.0f;
+    private const float CarHalfWidth = 7.0f;
+
+    private readonly HashSet<int> _overlappingDrivers = new();
+    private readonly HashSet <int> _overlappingDriversThisFrame = new();
+
 
     public void SetOtherDrivers(IEnumerable<Driver> drivers)
     {
@@ -217,6 +252,92 @@ public partial class Driver : Node2D
             }
         }
         return movementSpeed;
+    }
+
+    //overlap stats for collisions
+    private void UpdateOverlapStatistics(double delta)
+    {
+        if (_otherDrivers == null)
+            return;
+
+        _overlappingDriversThisFrame.Clear();
+
+        foreach (Driver other in _otherDrivers)
+        {
+            
+            if (other == this || other.DriverId <= DriverId)
+                continue;
+
+
+            if (!other.IsMoving && !other.IsWaitingInLane)
+                continue;
+
+            if (AreVehiclesOverlapping(other))
+            {
+                _overlappingDriversThisFrame.Add(other.DriverId);
+
+                
+                if (!_overlappingDrivers.Contains(other.DriverId))
+                {
+                    OverlapEventCount++;
+                }
+            }
+        }
+
+        OverlapTimeSeconds +=
+            _overlappingDriversThisFrame.Count * delta;
+
+        _overlappingDrivers.Clear();
+
+        foreach (int driverId in _overlappingDriversThisFrame)
+        {
+            _overlappingDrivers.Add(driverId);
+        }
+    }
+
+    private bool AreVehiclesOverlapping(Driver other)
+    {
+        Vector2 forwardA = new Vector2(
+            Mathf.Cos(Rotation),
+            Mathf.Sin(Rotation)
+        );
+
+        Vector2 sideA = new Vector2(-forwardA.Y, forwardA.X);
+
+        Vector2 forwardB = new Vector2(
+            Mathf.Cos(other.Rotation),
+            Mathf.Sin(other.Rotation)
+        );
+
+        Vector2 sideB = new Vector2(-forwardB.Y, forwardB.X);
+
+        Vector2 difference = other.GlobalPosition - GlobalPosition;
+
+        return OverlapsOnAxis(difference, forwardA, forwardA, sideA, forwardB, sideB)
+            && OverlapsOnAxis(difference, sideA, forwardA, sideA, forwardB, sideB)
+            && OverlapsOnAxis(difference, forwardB, forwardA, sideA, forwardB, sideB)
+            && OverlapsOnAxis(difference, sideB, forwardA, sideA, forwardB, sideB);
+    }
+
+    private static bool OverlapsOnAxis(
+        Vector2 difference,
+        Vector2 axis,
+        Vector2 forwardA,
+        Vector2 sideA,
+        Vector2 forwardB,
+        Vector2 sideB)
+    {
+        float radiusA =
+            CarHalfLength * Mathf.Abs(forwardA.Dot(axis)) +
+            CarHalfWidth * Mathf.Abs(sideA.Dot(axis));
+
+        float radiusB =
+            CarHalfLength * Mathf.Abs(forwardB.Dot(axis)) +
+            CarHalfWidth * Mathf.Abs(sideB.Dot(axis));
+
+        float distance = Mathf.Abs(difference.Dot(axis));
+
+        return distance <= radiusA + radiusB;
     }
 
     // true when route to follow
@@ -304,6 +425,20 @@ public partial class Driver : Node2D
         _waypoints.AddRange(waypoints);
         _backOut = backOut;
 
+        //reset travel time when new route
+        if (!backOut)
+        {
+            TravelTimeSeconds = 0;
+            IdealTravelTimeSeconds = 0;
+            CongestionTimeSeconds = 0;
+
+            OverlapTimeSeconds = 0;
+            OverlapEventCount = 0;
+
+            _overlappingDrivers.Clear();
+            _overlappingDriversThisFrame.Clear();
+        }
+
         _waypointSpeedLimits.Clear();
         _waypointSpeedLimits.AddRange(speedLimits);
 
@@ -311,6 +446,9 @@ public partial class Driver : Node2D
         {
             _waypointSpeedLimits.Add(35.0f);
         }
+
+        double routeIdealTime = CalculateIdealTravelTime(_waypoints, _waypointSpeedLimits, reversingSegment: backOut);
+        IdealTravelTimeSeconds += routeIdealTime;
 
         _currentWaypoint = 0;
         IsMoving = _waypoints.Count > 0;
@@ -327,6 +465,18 @@ public partial class Driver : Node2D
     {
         foreach (Vector2 waypoint in waypoints)
         {
+            if (_waypoints.Count > 0)
+            {
+                Vector2 previous = _waypoints[^1];
+
+                float distance = previous.DistanceTo(waypoint);
+                float speed = GetSpeedForLimit(35.0f);
+
+                if (speed > 0 )
+                {
+                    IdealTravelTimeSeconds += distance / speed;
+                }
+            }
             _waypoints.Add(waypoint);
             _waypointSpeedLimits.Add(35.0f);
         }
@@ -375,6 +525,8 @@ public partial class Driver : Node2D
     {
         // for no route
         if (!IsMoving) return;
+        TravelTimeSeconds += delta;
+        UpdateOverlapStatistics(delta);
         UpdateTunnelClipping();
         if (_currentWaypoint >= _waypoints.Count)
         {
@@ -410,6 +562,13 @@ public partial class Driver : Node2D
 
         // check for other cars
         float movementSpeed = GetMovementSpeed(direction.Normalized());
+
+        //track time slowed by traffic
+        if (movementSpeed < Speed - 0.1f)
+        {
+            CongestionTimeSeconds += delta;
+        } 
+
         if (reversing) movementSpeed *= 0.5f;
 
         // move to next point with adjusted speed

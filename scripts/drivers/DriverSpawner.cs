@@ -11,6 +11,86 @@ public partial class DriverSpawner : Node2D
 	public int ReturnedCount { get; private set; }
 	public int ActiveCount => _drivers.Count;
 	public double ElapsedSeconds { get; private set; }
+
+	//travel time
+	public double TotalTravelTimeSeconds { get; private set; }
+	public double TotalIdealTravelTimeSeconds { get; private set; }
+	public int CompletedTripCount => ConsumedCount + ReturnedCount;
+	public double AverageTravelTimeSeconds => 
+		CompletedTripCount > 0
+			? TotalTravelTimeSeconds / CompletedTripCount
+			: 0;
+	
+	public double TotalCongestionTimeSeconds { get; private set; }
+
+	public double AverageCongestionPercent =>
+		TotalTravelTimeSeconds > 0
+			? TotalCongestionTimeSeconds / TotalTravelTimeSeconds * 100.0
+			: 0;
+
+	public double TotalOverlapTimeSeconds { get; private set; }
+	public int TotalOverlapEvents { get; private set ; }
+	public double CompletionRatePercent =>
+		SpawnedCount > 0
+			? (double)CompletedTripCount / SpawnedCount * 100.0
+			: 0;
+
+	//max points for each category
+	private const double MaxCategoryScore = 25.0;
+
+
+
+	public double TravelTimeScore =>
+    	CompletedTripCount > 0 && TotalTravelTimeSeconds > 0
+        	? MaxCategoryScore * Math.Clamp(
+            	TotalIdealTravelTimeSeconds / TotalTravelTimeSeconds,
+            	0.0,
+            	1.0)
+        	: 0;
+
+	//traffic congestion score
+	public double CongestionScore =>
+    	CompletedTripCount > 0
+        	? MaxCategoryScore * Math.Clamp(
+            	1.0 - (AverageCongestionPercent / 100.0),
+            	0.0,
+            	1.0)
+        	: 0;
+
+	//collision score
+	public double OverlapScore =>
+    	CompletedTripCount > 0
+        	? (MaxCategoryScore / 2.0) *
+            	Math.Clamp(
+                	1.0 - (TotalOverlapEvents / (CompletedTripCount * 2.0)),
+                	0.0,
+                	1.0)
+          	+
+          	(MaxCategoryScore / 2.0) *
+            	Math.Clamp(
+                	1.0 - (TotalOverlapTimeSeconds /
+                    	Math.Max(TotalTravelTimeSeconds, 0.001)),
+                	0.0,
+                	1.0)
+        	: 0;
+
+	//completed trips score
+	public double CompletionScore =>
+    	MaxCategoryScore * Math.Clamp(
+        	CompletionRatePercent / 100.0,
+        	0.0,
+        	1.0);
+
+	//traffic score
+	public double TotalScore =>
+    	Math.Round(
+        	TravelTimeScore +
+        	CongestionScore +
+        	OverlapScore +
+        	CompletionScore,
+        	1);
+
+	public int UnfinishedTripCount => Math.Max(0, SpawnedCount - CompletedTripCount);
 	public event Action StateChanged;
 
 	private RoadGraph _roads;
@@ -127,6 +207,11 @@ public partial class DriverSpawner : Node2D
 		ConsumedCount = 0;
 		ReturnedCount = 0;
 		ElapsedSeconds = 0;
+		TotalTravelTimeSeconds = 0;
+		TotalIdealTravelTimeSeconds = 0;
+		TotalCongestionTimeSeconds = 0;
+		TotalOverlapTimeSeconds = 0;
+		TotalOverlapEvents = 0;
 		_duration = durationSeconds;
 		IsRunning = true;
 		StateChanged?.Invoke();
@@ -479,6 +564,12 @@ public partial class DriverSpawner : Node2D
 			ConsumedCount++;
 		}
 
+		TotalTravelTimeSeconds += driver.TravelTimeSeconds;
+		TotalIdealTravelTimeSeconds += driver.IdealTravelTimeSeconds;
+		TotalCongestionTimeSeconds += driver.CongestionTimeSeconds;
+		TotalOverlapTimeSeconds += driver.OverlapTimeSeconds;
+		TotalOverlapEvents += driver.OverlapEventCount;
+
 		_drivers.Remove(driver);
 		driver.Arrived -= OnDriverArrived;
 		RemoveChild(driver);
@@ -491,6 +582,28 @@ public partial class DriverSpawner : Node2D
 		}
 		StateChanged?.Invoke();
 	}
+
+	//end sim while preserving stats for results
+	public void FinishSimulation()
+	{
+		foreach (Driver driver in _drivers)
+		{
+			driver.Arrived -= OnDriverArrived;
+			RemoveChild(driver);
+			driver.QueueFree();
+		}
+
+		_drivers.Clear();
+		_residents.Clear();
+		_plans.Clear();
+
+		ClearParking();
+
+		IsRunning = false;
+
+		StateChanged?.Invoke();
+	}
+
 
 	// remove active drivers before allowing the map to be edited again
 	public void Reset()
@@ -510,6 +623,11 @@ public partial class DriverSpawner : Node2D
 		ReturnedCount = 0;
 		ElapsedSeconds = 0;
 		IsRunning = false;
+		TotalTravelTimeSeconds = 0;
+		TotalIdealTravelTimeSeconds = 0;
+		TotalCongestionTimeSeconds = 0;
+		TotalOverlapTimeSeconds = 0;
+		TotalOverlapEvents = 0;
 		StateChanged?.Invoke();
 	}
 
