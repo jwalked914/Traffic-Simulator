@@ -29,6 +29,9 @@ public partial class InspectorPanel : Control
 	public int ChosenParkingRows => (int)_parkingRowsInput.Value;
 	public int ChosenDriverCount => (int)_driverCountInput.Value;
 
+	public event Action<JunctionTemplateType> JunctionTemplateChanged;
+	public JunctionTemplateType ChosenTemplate => (JunctionTemplateType)_templateOption.GetSelectedId();
+
 	// roads values and buttons
 	private Label _laneValue;
 	private Label _speedValue;
@@ -40,6 +43,8 @@ public partial class InspectorPanel : Control
 	private Control _lanesField;
 	private Control _speedField;
 	private Control _signalField;
+	private Control _templateField;
+	private OptionButton _templateOption;
 	private VBoxContainer _buildingFields;
 	private Control _typeIcon;
 	private Label _titleLabel;
@@ -76,6 +81,7 @@ public partial class InspectorPanel : Control
     {
         FindControls();
         PopulateBuildingTypes();
+        PopulateJunctionTemplates();
         LoadBuildingSettings(_buildingDefaults[ChosenType]);
         ConnectEvents();
         RefreshRoadLabels();
@@ -93,6 +99,8 @@ public partial class InspectorPanel : Control
         _lanesField = content.GetNode<Control>("LanesField");
         _speedField = content.GetNode<Control>("SpeedField");
         _signalField = content.GetNode<Control>("SignalField");
+        _templateField = content.GetNode<Control>("TemplateField");
+        _templateOption = _templateField.GetNode<OptionButton>("OptionButton");
 
         _buildingFields = content.GetNode<VBoxContainer>("StructureFields");
         _buildingType = _buildingFields.GetNode<OptionButton>("BuildingType");
@@ -135,6 +143,17 @@ public partial class InspectorPanel : Control
         }
     }
 
+    // keep dropdown choices matched to the junction templates
+    private void PopulateJunctionTemplates()
+    {
+        _templateOption.Clear();
+        foreach (JunctionTemplateType type in Enum.GetValues<JunctionTemplateType>())
+        {
+            _templateOption.AddItem(type.ToString(), (int)type);
+        }
+        _templateOption.Select(0);
+    }
+
     // sends button actions and field changes to the rest of the ui
     private void ConnectEvents()
     {
@@ -144,6 +163,7 @@ public partial class InspectorPanel : Control
         _deleteButton.Pressed += () => DeleteRequested?.Invoke();
 
         _buildingType.ItemSelected += OnBuildingTypeSelected;
+        _templateOption.ItemSelected += _ => JunctionTemplateChanged?.Invoke(ChosenTemplate);
         _widthInput.ValueChanged += _ => OnDraftChanged();
         _heightInput.ValueChanged += _ => OnDraftChanged();
         _parkingRowsInput.ValueChanged += _ => OnDraftChanged();
@@ -196,6 +216,12 @@ public partial class InspectorPanel : Control
             _typeLabel.Text = "Click to place | Press R to rotate";
             _subtitleLabel.Text = "Click an existing building to edit";
         }
+        else if (tool == ToolType.Junction)
+        {
+            _titleLabel.Text = "Junction Tool";
+            _typeLabel.Text = "Click to place | Press R to rotate";
+            _subtitleLabel.Text = "Pick a template below";
+        }
         else
         {
             _titleLabel.Text = $"{tool} Tool";
@@ -233,6 +259,7 @@ public partial class InspectorPanel : Control
 		_lanesField.Visible = roadSelected;
 		_speedField.Visible = roadSelected;
 		_signalField.Visible = junctionSelected;
+		_templateField.Visible = junctionSelected;
 		_buildingFields.Visible = buildingSelected;
 		_typeIcon.Visible = !buildingSelected;
 		Visible = roadSelected || junctionSelected || buildingSelected;

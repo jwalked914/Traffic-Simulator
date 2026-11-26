@@ -59,6 +59,10 @@ public partial class UIRoot : CanvasLayer
 
 		//apply starting speed limit
 		_roads.SetSpeedLimit(_inspector.SpeedLimit);
+
+		//connect junction template dropdown to road graph and apply the starting template
+		_inspector.JunctionTemplateChanged += _roads.SetJunctionTemplate;
+		_roads.SetJunctionTemplate(_inspector.ChosenTemplate);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
 
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
@@ -138,6 +142,7 @@ public partial class UIRoot : CanvasLayer
 	{
 		if (_structures == null) return;
 		_inspector.RoadSettingsChanged -= OnRoadSettingsChanged;
+		_inspector.JunctionTemplateChanged -= _roads.SetJunctionTemplate;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;

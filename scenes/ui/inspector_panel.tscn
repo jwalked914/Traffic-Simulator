@@ -151,16 +151,32 @@ theme_override_styles/pressed = ExtResource("4_d0c32")
 theme_override_styles/hover = ExtResource("5_nfi3p")
 text = "+"
 
-[node name="SignalField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=597416292]
+[node name="TemplateField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=597416292]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="SignalLabel" type="Label" parent="PanelContainer/InspectorContent/SignalField" unique_id=1576364202]
+[node name="SignalLabel" type="Label" parent="PanelContainer/InspectorContent/TemplateField" unique_id=1576364202]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+text = "Template:"
+
+[node name="OptionButton" type="OptionButton" parent="PanelContainer/InspectorContent/TemplateField" unique_id=1833280398]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
+selected = 0
+item_count = 1
+popup/item_0/id = 0
+
+[node name="SignalField" type="VBoxContainer" parent="PanelContainer/InspectorContent" unique_id=682994933]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SignalLabel" type="Label" parent="PanelContainer/InspectorContent/SignalField" unique_id=2079314133]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 text = "Signal Type:"
 
-[node name="OptionButton" type="OptionButton" parent="PanelContainer/InspectorContent/SignalField" unique_id=1833280398]
+[node name="OptionButton" type="OptionButton" parent="PanelContainer/InspectorContent/SignalField" unique_id=1786966086]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8666667, 0.8901961, 0.9098039, 1)
 selected = 0
