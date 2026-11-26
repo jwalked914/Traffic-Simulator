@@ -56,6 +56,12 @@ public partial class RoadGraph : Node2D
 	private readonly HashSet<Vector2I> _selectedRoadCells = new();
 	private readonly List<Structure> _selectedStructures = new();
 
+	// junction tool: which template to place, its rotation, and its preview
+	private JunctionTemplate _junctionTemplate = JunctionTemplate.Get(JunctionTemplateType.FourWay);
+	private int _templateRotation;
+	private bool _showTemplatePreview;
+	private Vector2I _templateHoverCell;
+
 	public IReadOnlyList<RoadSegment> Segments => _roadNetwork?.Segments ?? Array.Empty<RoadSegment>();
 	public bool IsRectDragging => _isDraggingRect;
 
@@ -86,6 +92,14 @@ public partial class RoadGraph : Node2D
 	public void SetSpeedLimit(int speedLimit)
 	{
 		_currentSpeedLimit = speedLimit;
+	}
+
+	// picks which premade junction the junction tool places
+	public void SetJunctionTemplate(JunctionTemplateType type)
+	{
+		_junctionTemplate = JunctionTemplate.Get(type);
+		_templateRotation = 0;
+		QueueRedraw();
 	}
 
 	public event Action<RoadSegment> RoadPlaced;
@@ -192,6 +206,7 @@ public partial class RoadGraph : Node2D
 	public override void _Process(double delta)
 	{
 		UpdateHover();
+		UpdateTemplatePreview();
 		if (_isErasing)
 		{
 			if (!Input.IsMouseButtonPressed(MouseButton.Left))
@@ -241,6 +256,18 @@ public partial class RoadGraph : Node2D
 	{
 		if (_roadNetwork == null || _ui.IsSimulating) return;
 
+		// junction tool: R rotates the template (same key as buildings)
+		if (_ui.CurrentTool == ToolType.Junction && @event is InputEventKey key &&
+			key.Pressed && !key.Echo && !key.CtrlPressed && !key.AltPressed && !key.MetaPressed &&
+			(key.PhysicalKeycode == Key.R || key.Keycode == Key.R) &&
+			GetViewport().GuiGetFocusOwner() is not LineEdit and not TextEdit)
+		{
+			_templateRotation = (_templateRotation + 1) % 4;
+			QueueRedraw();
+			GetViewport().SetInputAsHandled();
+			return;
+		}
+
 		if (_ui.CurrentTool == ToolType.Junction && !_isDraggingRect &&
 			@event is InputEventMouseButton click &&
 			click.ButtonIndex == MouseButton.Left && !click.ShiftPressed)
@@ -248,7 +275,8 @@ public partial class RoadGraph : Node2D
 			if (click.Pressed)
 			{
 				Vector2I cell = GlobalToCell(GetGlobalMousePosition());
-				if (!TryPlaceFourWay(cell, out string error))
+				var paths = _junctionTemplate.GetPaths(cell, _templateRotation);
+				if (!TryPlaceTemplate(paths, out string error))
 				{
 					GD.Print($"Can't place intersection: {error}");
 				}
@@ -442,13 +470,11 @@ public partial class RoadGraph : Node2D
     	return true;
 	}
 
-	// places a premade 4-way intersection centered on a cell
-	public bool TryPlaceFourWay(Vector2I center, out string error)
+	// places a premade junction from its road paths, all or nothing
+	public bool TryPlaceTemplate(List<List<Vector2I>> paths, out string error)
 	{
 		error = "";
 		if (_roadNetwork == null || _ui.IsSimulating) return false;
-
-		List<List<Vector2I>> paths = RoadJunction.FourWayPaths(center);
 
 		foreach (List<Vector2I> path in paths)
 		{
@@ -642,10 +668,46 @@ public partial class RoadGraph : Node2D
 
 			DrawCommittedRoads(finalRoadWidth);
 			DrawRoadPreview(finalRoadWidth);
+			DrawTemplatePreview(finalRoadWidth);
 		}
 
 		DrawRectSelection();
 		DrawHover();
+	}
+
+	// tracks where the junction template would be placed
+	private void UpdateTemplatePreview()
+	{
+		bool show = _ui.CurrentTool == ToolType.Junction && !_ui.IsSimulating &&
+			!_isDraggingRect && GetViewport().GuiGetHoveredControl() == null;
+		Vector2I cell = GlobalToCell(GetGlobalMousePosition());
+
+		if (show == _showTemplatePreview && cell == _templateHoverCell)
+		{
+			return;
+		}
+
+		_showTemplatePreview = show;
+		_templateHoverCell = cell;
+		QueueRedraw();
+	}
+
+	// ghost of the template under the cursor, red where it can't be placed
+	private void DrawTemplatePreview(float roadWidth)
+	{
+		if (!_showTemplatePreview)
+		{
+			return;
+		}
+
+		List<List<Vector2I>> paths = _junctionTemplate.GetPaths(_templateHoverCell, _templateRotation);
+		bool valid = paths.All(path => CanAddRoad(path, out _));
+		Color color = valid ? RoadPreviewColor : new Color(DeleteOutlineColor, 0.6f);
+
+		foreach (List<Vector2I> path in paths)
+		{
+			DrawRoadPath(path, color, roadWidth);
+		}
 	}
 
 	private void DrawCommittedRoads(float roadWidth)

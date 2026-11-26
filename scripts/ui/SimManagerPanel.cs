@@ -58,7 +58,7 @@ public partial class SimManagerPanel : Control
 		_stopsim.Disabled = !active;
 		_flag.Disabled = !_simclock.Running;
 		_status.Hide();
-		
+	
 		_speedSlider.SetValueNoSignal(Array.IndexOf(Speeds, _simclock.Speed));
 		_speedValue.Text = $"{_simclock.Speed}x";
 	}
