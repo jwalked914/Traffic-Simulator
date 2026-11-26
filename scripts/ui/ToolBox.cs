@@ -26,7 +26,6 @@ public partial class ToolBox : Control
 		_buttons[ToolType.Junction] = GetNode<Button>("PanelContainer/ToolBoxButtons/JunctionButton");
 		_buttons[ToolType.Structure] = GetNode<Button>("PanelContainer/ToolBoxButtons/BuildingsButton");
 		_buttons[ToolType.Home] = GetNode<Button>("PanelContainer/ToolBoxButtons/HomeButton");
-		_buttons[ToolType.Roundabout] = GetNode<Button>("PanelContainer/ToolBoxButtons/RoundaboutButton");
 		foreach (Button button in _buttons.Values)
 		{
 			button.Pressed += ReportSelected;
@@ -40,7 +39,6 @@ public partial class ToolBox : Control
 			_buttons[ToolType.Junction],
 			_buttons[ToolType.Structure],
 			_buttons[ToolType.Home],
-			_buttons[ToolType.Roundabout],
 		});
 
 		_prev = GetNode<Button>("PanelContainer/ToolBoxButtons/PrevButton");
