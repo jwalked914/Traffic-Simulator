@@ -63,6 +63,10 @@ public partial class UIRoot : CanvasLayer
 		//connect junction template dropdown to road graph and apply the starting template
 		_inspector.JunctionTemplateChanged += _roads.SetJunctionTemplate;
 		_roads.SetJunctionTemplate(_inspector.ChosenTemplate);
+
+		//junction tool: picking an intersection shows its signal, the dropdown edits it
+		_roads.JunctionSelectionChanged += OnJunctionSelected;
+		_inspector.SignalTypeChanged += OnSignalTypeChanged;
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
 
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
@@ -143,6 +147,8 @@ public partial class UIRoot : CanvasLayer
 		if (_structures == null) return;
 		_inspector.RoadSettingsChanged -= OnRoadSettingsChanged;
 		_inspector.JunctionTemplateChanged -= _roads.SetJunctionTemplate;
+		_roads.JunctionSelectionChanged -= OnJunctionSelected;
+		_inspector.SignalTypeChanged -= OnSignalTypeChanged;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;
@@ -163,11 +169,36 @@ public partial class UIRoot : CanvasLayer
 		EmitSignal(SignalName.ToolChanged, tool);
 	}
 
+	// shows the picked intersection's signal or returns to the junction tool's settings
+	private void OnJunctionSelected(Vector2I? cell)
+	{
+		if (cell is Vector2I picked)
+		{
+			_structures.Select(null); // one thing selected at a time
+			_inspector.ShowJunction(picked, _roads.GetSignal(picked));
+		}
+		else _inspector.ShowForTool(CurrentTool);
+	}
+
+	// changes the signal type and keeps the rest of its settings
+	private void OnSignalTypeChanged(SignalType type)
+	{
+		if (_roads.SelectedJunction is not Vector2I cell) return;
+
+		SignalSettings current = _roads.GetSignal(cell);
+		if (!_roads.SetSignal(cell, current with { Type = type }))
+			GD.Print($"Can't set a signal at {cell}: not an intersection");
+	}
+
 	// shows the selected building or returns to the active tool's settings
 	private void OnStructureSelected(Structure structure)
 	{
 		if (structure == null) _inspector.ShowForTool(CurrentTool);
-		else _inspector.ShowStructure(structure);
+		else
+		{
+			_roads.ClearJunctionSelection(); // one thing selected at a time
+			_inspector.ShowStructure(structure);
+		}
 	}
 
 	// applies the inspector's values or shows why the edit was rejected

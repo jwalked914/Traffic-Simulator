@@ -32,6 +32,9 @@ public partial class InspectorPanel : Control
 	public event Action<JunctionTemplateType> JunctionTemplateChanged;
 	public JunctionTemplateType ChosenTemplate => (JunctionTemplateType)_templateOption.GetSelectedId();
 
+	public event Action<SignalType> SignalTypeChanged;
+	public SignalType ChosenSignal => (SignalType)_signalOption.GetSelectedId();
+
 	// roads values and buttons
 	private Label _laneValue;
 	private Label _speedValue;
@@ -45,6 +48,7 @@ public partial class InspectorPanel : Control
 	private Control _signalField;
 	private Control _templateField;
 	private OptionButton _templateOption;
+	private OptionButton _signalOption;
 	private VBoxContainer _buildingFields;
 	private Control _typeIcon;
 	private Label _titleLabel;
@@ -82,6 +86,7 @@ public partial class InspectorPanel : Control
         FindControls();
         PopulateBuildingTypes();
         PopulateJunctionTemplates();
+        PopulateSignalTypes();
         LoadBuildingSettings(_buildingDefaults[ChosenType]);
         ConnectEvents();
         RefreshRoadLabels();
@@ -101,6 +106,7 @@ public partial class InspectorPanel : Control
         _signalField = content.GetNode<Control>("SignalField");
         _templateField = content.GetNode<Control>("TemplateField");
         _templateOption = _templateField.GetNode<OptionButton>("OptionButton");
+        _signalOption = _signalField.GetNode<OptionButton>("OptionButton");
 
         _buildingFields = content.GetNode<VBoxContainer>("StructureFields");
         _buildingType = _buildingFields.GetNode<OptionButton>("BuildingType");
@@ -154,6 +160,24 @@ public partial class InspectorPanel : Control
         _templateOption.Select(0);
     }
 
+    // keep dropdown choices matched to the signal types
+    private void PopulateSignalTypes()
+    {
+        _signalOption.Clear();
+        foreach (SignalType type in Enum.GetValues<SignalType>())
+        {
+            string name = type switch
+            {
+                SignalType.AllWayStop => "All-way stop",
+                SignalType.TwoWayStop => "Two-way stop",
+                SignalType.TrafficLight => "Traffic light",
+                _ => "None"
+            };
+            _signalOption.AddItem(name, (int)type);
+        }
+        _signalOption.Select(0);
+    }
+
     // sends button actions and field changes to the rest of the ui
     private void ConnectEvents()
     {
@@ -164,6 +188,10 @@ public partial class InspectorPanel : Control
 
         _buildingType.ItemSelected += OnBuildingTypeSelected;
         _templateOption.ItemSelected += _ => JunctionTemplateChanged?.Invoke(ChosenTemplate);
+        _signalOption.ItemSelected += _ =>
+        {
+            if (!_updatingControls) SignalTypeChanged?.Invoke(ChosenSignal);
+        };
         _widthInput.ValueChanged += _ => OnDraftChanged();
         _heightInput.ValueChanged += _ => OnDraftChanged();
         _parkingRowsInput.ValueChanged += _ => OnDraftChanged();
@@ -220,7 +248,7 @@ public partial class InspectorPanel : Control
         {
             _titleLabel.Text = "Junction Tool";
             _typeLabel.Text = "Click to place | Press R to rotate";
-            _subtitleLabel.Text = "Pick a template below";
+            _subtitleLabel.Text = "Click an intersection to set its signal";
         }
         else
         {
@@ -232,6 +260,23 @@ public partial class InspectorPanel : Control
         SetMessage("");
         RefreshDetails();
     }
+
+	// shows the signal settings of the intersection picked with the junction tool
+	public void ShowJunction(Vector2I cell, SignalSettings signal)
+	{
+		_selectedStructure = null;
+		ShowFieldsForTool(ToolType.Junction);
+		_signalField.Visible = true;
+		_templateField.Visible = false; // editing a signal, not placing a template
+
+		_updatingControls = true;
+		_signalOption.Select(_signalOption.GetItemIndex((int)signal.Type));
+		_updatingControls = false;
+
+		_titleLabel.Text = "Selected: Intersection";
+		_typeLabel.Text = $"Grid ({cell.X}, {cell.Y})";
+		_subtitleLabel.Text = "Pick a signal | Esc to deselect";
+	}
 
 	// loads a selected building's settings into the inspector
 	public void ShowStructure(Structure structure)
@@ -258,7 +303,7 @@ public partial class InspectorPanel : Control
 
 		_lanesField.Visible = roadSelected;
 		_speedField.Visible = roadSelected;
-		_signalField.Visible = junctionSelected;
+		_signalField.Visible = false; 
 		_templateField.Visible = junctionSelected;
 		_buildingFields.Visible = buildingSelected;
 		_typeIcon.Visible = !buildingSelected;

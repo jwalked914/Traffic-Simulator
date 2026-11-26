@@ -14,6 +14,11 @@ public class RoadNetwork
 	public IReadOnlyList<RoadSegment> Segments => _segments.AsReadOnly();
 	public IReadOnlyDictionary<Vector2I, RoadJunction> Junctions => _junctions;
 
+	// signals are keyed by cell, not stored on RoadJunction,
+	// so they survive junctions being rebuilt when roads change
+	private readonly Dictionary<Vector2I, SignalSettings> _signals = new();
+	public IReadOnlyDictionary<Vector2I, SignalSettings> Signals => _signals;
+
 	public RoadNetwork(LaneGraph laneGraph)
 	{
 		_laneGraph = laneGraph;
@@ -142,6 +147,38 @@ public class RoadNetwork
 	{
 		return _segments.Any(s => s.A == cell || s.B == cell);
 	}
+
+	// how many road ends meet at a cell (a loop that starts and ends here counts twice)
+	public int GetConnectionCount(Vector2I cell)
+	{
+		int count = 0;
+		foreach (RoadSegment segment in _segments)
+		{
+			if (segment.A == cell) count++;
+			if (segment.B == cell) count++;
+		}
+		return count;
+	}
+
+	// only real intersections (3+ roads) can have signals; bends and dead ends can't
+	public bool IsIntersection(Vector2I cell) => GetConnectionCount(cell) >= 3;
+
+	// signal at a cell, or None if it has none or is no longer an intersection
+	public SignalSettings GetSignal(Vector2I cell)
+	{
+		if (!IsIntersection(cell)) return default;
+		return _signals.TryGetValue(cell, out SignalSettings signal) ? signal : default;
+	}
+
+	// sets or clears a signal; returns false if the cell isn't an intersection
+	public bool SetSignal(Vector2I cell, SignalSettings signal)
+	{
+		if (!IsIntersection(cell)) return false;
+
+		if (signal.Type == SignalType.None) _signals.Remove(cell);
+		else _signals[cell] = signal;
+		return true;
+	}
 	
 	private bool SegmentExistsBetween(Vector2I a, Vector2I b)
 	{
@@ -188,6 +225,7 @@ public class RoadNetwork
 		_laneGraph.RemoveLanes(laneIDs);
 		_segments.Clear();
 		_junctions.Clear();
+		_signals.Clear();
 	}
 
 	private void CreateLanesForSegment(RoadSegment segment)

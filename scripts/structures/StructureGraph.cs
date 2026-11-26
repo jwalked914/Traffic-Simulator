@@ -360,7 +360,12 @@ public partial class StructureGraph : Node2D
 			if (!TryPlace(cell, DraftType, DraftSize, DraftParkingRows, out _, out string error, DraftDriverCount, DraftRotationSteps))
 				PlacementRejected?.Invoke(error);
 		}
-		else Select(null);
+		else
+		{
+			Select(null);
+			// with no tool, let the road graph see the click too (it may be an intersection)
+			if (_ui.CurrentTool == ToolType.None) return;
+		}
 		GetViewport().SetInputAsHandled();
 	}
 

@@ -62,11 +62,17 @@ public partial class RoadGraph : Node2D
 	private bool _showTemplatePreview;
 	private Vector2I _templateHoverCell;
 
+	// junction tool: the existing intersection picked for signal editing, if any
+	private Vector2I? _selectedJunction;
+
 	public IReadOnlyList<RoadSegment> Segments => _roadNetwork?.Segments ?? Array.Empty<RoadSegment>();
 	public bool IsRectDragging => _isDraggingRect;
 
 	public bool HasSelection => _hasSelection;
 	public event Action SelectionChanged;
+
+	public Vector2I? SelectedJunction => _selectedJunction;
+	public event Action<Vector2I?> JunctionSelectionChanged;
 	public IReadOnlySet<Vector2I> SelectedRoadCells => _selectedRoadCells;
 	public IReadOnlyList<Structure> SelectedStructures => _selectedStructures;
 
@@ -80,12 +86,42 @@ public partial class RoadGraph : Node2D
 
 	public void ClearSelection()
 	{
+		ClearJunctionSelection();
 		if (!_hasSelection) return;
 		_hasSelection = false;
 		_selectedRoadCells.Clear();
 		_selectedStructures.Clear();
 		SelectionChanged?.Invoke();
 		QueueRedraw();
+	}
+
+	// selects an existing intersection so its signal can be edited
+	// always notifies, so clicking the same intersection again re-shows it in the inspector
+	private void SelectJunction(Vector2I cell)
+	{
+		_selectedJunction = cell;
+		JunctionSelectionChanged?.Invoke(_selectedJunction);
+		QueueRedraw();
+	}
+
+	public void ClearJunctionSelection()
+	{
+		if (_selectedJunction == null) return;
+
+		_selectedJunction = null;
+		JunctionSelectionChanged?.Invoke(null);
+		QueueRedraw();
+	}
+
+	// signal access for the ui; the road network does the validation
+	public SignalSettings GetSignal(Vector2I cell) => _roadNetwork?.GetSignal(cell) ?? default;
+
+	public bool SetSignal(Vector2I cell, SignalSettings signal)
+	{
+		if (_roadNetwork == null || !_roadNetwork.SetSignal(cell, signal)) return false;
+
+		QueueRedraw();
+		return true;
 	}
 
 	//update speed limit for new roads
@@ -256,6 +292,26 @@ public partial class RoadGraph : Node2D
 	{
 		if (_roadNetwork == null || _ui.IsSimulating) return;
 
+		// no tool (select mode): clicking an intersection picks it for signal editing,
+		// the same way clicking a building selects it
+		if (_ui.CurrentTool == ToolType.None && !_isDraggingRect &&
+			@event is InputEventMouseButton pick && pick.Pressed &&
+			pick.ButtonIndex == MouseButton.Left && !pick.ShiftPressed)
+		{
+			Vector2I cell = GlobalToCell(GetGlobalMousePosition());
+			if (_roadNetwork.IsIntersection(cell))
+			{
+				ClearSelection();
+				SelectJunction(cell);
+				GetViewport().SetInputAsHandled();
+			}
+			else
+			{
+				ClearJunctionSelection();
+			}
+			return;
+		}
+
 		// junction tool: R rotates the template (same key as buildings)
 		if (_ui.CurrentTool == ToolType.Junction && @event is InputEventKey key &&
 			key.Pressed && !key.Echo && !key.CtrlPressed && !key.AltPressed && !key.MetaPressed &&
@@ -275,10 +331,21 @@ public partial class RoadGraph : Node2D
 			if (click.Pressed)
 			{
 				Vector2I cell = GlobalToCell(GetGlobalMousePosition());
-				var paths = _junctionTemplate.GetPaths(cell, _templateRotation);
-				if (!TryPlaceTemplate(paths, out string error))
+
+				// clicking an existing intersection selects it instead of placing on top of it
+				if (_roadNetwork.IsIntersection(cell))
 				{
-					GD.Print($"Can't place intersection: {error}");
+					ClearSelection();
+					SelectJunction(cell);
+				}
+				else
+				{
+					ClearJunctionSelection();
+					var paths = _junctionTemplate.GetPaths(cell, _templateRotation);
+					if (!TryPlaceTemplate(paths, out string error))
+					{
+						GD.Print($"Can't place intersection: {error}");
+					}
 				}
 			}
 			GetViewport().SetInputAsHandled();
@@ -672,15 +739,26 @@ public partial class RoadGraph : Node2D
 		}
 
 		DrawRectSelection();
+		DrawJunctionSelection();
 		DrawHover();
+	}
+
+	// outlines the intersection picked for signal editing
+	private void DrawJunctionSelection()
+	{
+		if (_selectedJunction is not Vector2I cell) return;
+
+		DrawDeleteRect(GetCellLocalRect(cell), SelectFillColor, SelectOutlineColor);
 	}
 
 	// tracks where the junction template would be placed
 	private void UpdateTemplatePreview()
 	{
-		bool show = _ui.CurrentTool == ToolType.Junction && !_ui.IsSimulating &&
-			!_isDraggingRect && GetViewport().GuiGetHoveredControl() == null;
 		Vector2I cell = GlobalToCell(GetGlobalMousePosition());
+		// over an existing intersection a click selects it, so no template ghost
+		bool show = _ui.CurrentTool == ToolType.Junction && !_ui.IsSimulating &&
+			!_isDraggingRect && GetViewport().GuiGetHoveredControl() == null &&
+			_roadNetwork != null && !_roadNetwork.IsIntersection(cell);
 
 		if (show == _showTemplatePreview && cell == _templateHoverCell)
 		{
