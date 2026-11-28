@@ -56,7 +56,8 @@ public partial class InspectorPanel : Control
 	private OptionButton _templateOption;
 	private OptionButton _signalOption;
 	private VBoxContainer _buildingFields;
-	private Control _typeIcon;
+	private TextureRect _typeIcon;
+	private Texture2D _roadIcon;
 	private Label _titleLabel;
 	private Label _typeLabel;
 	private Label _subtitleLabel;
@@ -106,7 +107,8 @@ public partial class InspectorPanel : Control
         _titleLabel = content.GetNode<Label>("HeaderRow/SelectedObjectLabel");
         _typeLabel = content.GetNode<Label>("TypeLabel");
         _subtitleLabel = content.GetNode<Label>("TypeSubtitle");
-        _typeIcon = content.GetNode<Control>("TypeIcon");
+        _typeIcon = content.GetNode<TextureRect>("TypeIcon");
+        _roadIcon = GD.Load<Texture2D>("res://assets/template_straight.svg");
         _lanesField = content.GetNode<Control>("LanesField");
         _speedField = content.GetNode<Control>("SpeedField");
         _signalField = content.GetNode<Control>("SignalField");
@@ -155,6 +157,9 @@ public partial class InspectorPanel : Control
         }
     }
 
+    private static Texture2D TemplateIcon(JunctionTemplateType type) =>
+        GD.Load<Texture2D>($"res://assets/template_{type.ToString().ToLower()}.svg");
+
     // keep dropdown choices matched to the junction templates
     private void PopulateJunctionTemplates()
     {
@@ -193,7 +198,11 @@ public partial class InspectorPanel : Control
         _deleteButton.Pressed += () => DeleteRequested?.Invoke();
 
         _buildingType.ItemSelected += OnBuildingTypeSelected;
-        _templateOption.ItemSelected += _ => JunctionTemplateChanged?.Invoke(ChosenTemplate);
+        _templateOption.ItemSelected += _ =>
+        {
+            _typeIcon.Texture = TemplateIcon(ChosenTemplate);
+            JunctionTemplateChanged?.Invoke(ChosenTemplate);
+        };
         _signalOption.ItemSelected += _ =>
         {
             if (_updatingControls) return;
@@ -252,6 +261,7 @@ public partial class InspectorPanel : Control
         _selectedStructure = null;
         _editingJunction = false;
         ShowFieldsForTool(tool);
+        _typeIcon.Texture = tool == ToolType.Junction ? TemplateIcon(ChosenTemplate) : _roadIcon;
 
         if (tool == ToolType.Structure)
         {
@@ -288,7 +298,7 @@ public partial class InspectorPanel : Control
 	{
 		_selectedStructure = null;
 		ShowFieldsForTool(ToolType.Junction);
-		_templateField.Visible = false; // editing a signal, not placing a template
+		_templateField.Visible = false;
 		_editingJunction = true;
 
 		_updatingControls = true;
