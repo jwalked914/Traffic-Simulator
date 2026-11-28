@@ -67,6 +67,10 @@ public partial class UIRoot : CanvasLayer
 		//junction tool: picking an intersection shows its signal, the dropdown edits it
 		_roads.JunctionSelectionChanged += OnJunctionSelected;
 		_inspector.SignalTypeChanged += OnSignalTypeChanged;
+
+		//junction tool: the signal new templates get
+		_inspector.PlacementSignalChanged += _roads.SetPlacementSignal;
+		_roads.SetPlacementSignal(_inspector.PlacementSignal);
 		GetNode<MenuButton>("SimMenuButton").GetPopup().IdPressed += OnSimMenuItemPressed;
 
 		DirAccess.MakeDirRecursiveAbsolute(SaveDir);
@@ -149,6 +153,7 @@ public partial class UIRoot : CanvasLayer
 		_inspector.JunctionTemplateChanged -= _roads.SetJunctionTemplate;
 		_roads.JunctionSelectionChanged -= OnJunctionSelected;
 		_inspector.SignalTypeChanged -= OnSignalTypeChanged;
+		_inspector.PlacementSignalChanged -= _roads.SetPlacementSignal;
 		_structures.SelectionChanged -= OnStructureSelected;
 		_structures.StructuresChanged -= _inspector.RefreshDetails;
 		_structures.PlacementRejected -= _inspector.SetMessage;

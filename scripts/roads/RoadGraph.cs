@@ -26,6 +26,11 @@ public partial class RoadGraph : Node2D
 	[Export] public Color DeleteFillColor { get; set; } = new Color(0.95f, 0.22f, 0.27f, 0.16f);
 	[Export] public Color DeleteOutlineColor { get; set; } = new Color(1.0f, 0.34f, 0.38f, 0.9f);
 
+	[ExportGroup("Signals")]
+	[Export] public Color StopLineColor { get; set; } = new Color(0.96f, 0.98f, 1.0f, 0.95f);
+	[Export] public Color StopSignColor { get; set; } = new Color(0.86f, 0.12f, 0.15f);
+	[Export] public float StopSignRadius { get; set; } = 6.0f;
+
 	[ExportGroup("Selection")]
 	[Export] public Color SelectFillColor { get; set; } = new Color(0.25f, 0.62f, 1.0f, 0.16f);
 	[Export] public Color SelectOutlineColor { get; set; } = new Color(0.35f, 0.70f, 1.0f, 0.9f);
@@ -64,6 +69,9 @@ public partial class RoadGraph : Node2D
 
 	// junction tool: the existing intersection picked for signal editing, if any
 	private Vector2I? _selectedJunction;
+
+	// junction tool: signal given to each template's center when it's placed
+	private SignalType _placementSignal = SignalType.None;
 
 	public IReadOnlyList<RoadSegment> Segments => _roadNetwork?.Segments ?? Array.Empty<RoadSegment>();
 	public bool IsRectDragging => _isDraggingRect;
@@ -116,6 +124,18 @@ public partial class RoadGraph : Node2D
 	// signal access for the ui; the road network does the validation
 	public SignalSettings GetSignal(Vector2I cell) => _roadNetwork?.GetSignal(cell) ?? default;
 
+	// every intersection that currently has a signal (skips old entries on cells that are no longer intersections)
+	public IEnumerable<(Vector2I Cell, SignalSettings Signal)> GetActiveSignals()
+	{
+		if (_roadNetwork == null) yield break;
+
+		foreach (var entry in _roadNetwork.Signals)
+		{
+			SignalSettings signal = _roadNetwork.GetSignal(entry.Key);
+			if (signal.Type != SignalType.None) yield return (entry.Key, signal);
+		}
+	}
+
 	public bool SetSignal(Vector2I cell, SignalSettings signal)
 	{
 		if (_roadNetwork == null || !_roadNetwork.SetSignal(cell, signal)) return false;
@@ -129,6 +149,9 @@ public partial class RoadGraph : Node2D
 	{
 		_currentSpeedLimit = speedLimit;
 	}
+
+	// picks which signal new templates get
+	public void SetPlacementSignal(SignalType type) => _placementSignal = type;
 
 	// picks which premade junction the junction tool places
 	public void SetJunctionTemplate(JunctionTemplateType type)
@@ -345,6 +368,11 @@ public partial class RoadGraph : Node2D
 					if (!TryPlaceTemplate(paths, out string error))
 					{
 						GD.Print($"Can't place intersection: {error}");
+					}
+					else if (_placementSignal != SignalType.None)
+					{
+						// the template's center is the new intersection
+						SetSignal(cell, new SignalSettings(_placementSignal));
 					}
 				}
 			}
@@ -734,6 +762,7 @@ public partial class RoadGraph : Node2D
 			float finalRoadWidth = Mathf.Clamp(RoadWidth, 1.0f, CellSize);
 
 			DrawCommittedRoads(finalRoadWidth);
+			DrawSignals(finalRoadWidth);
 			DrawRoadPreview(finalRoadWidth);
 			DrawTemplatePreview(finalRoadWidth);
 		}
@@ -786,6 +815,59 @@ public partial class RoadGraph : Node2D
 		{
 			DrawRoadPath(path, color, roadWidth);
 		}
+	}
+
+	// draws the markings for every signaled intersection
+	private void DrawSignals(float roadWidth)
+	{
+		foreach ((Vector2I cell, SignalSettings signal) in GetActiveSignals())
+		{
+			foreach (Godot.Vector2 approach in GetApproachDirections(cell))
+			{
+				switch (signal.Type)
+				{
+					case SignalType.AllWayStop:
+						DrawStopMarking(cell, approach, roadWidth);
+						break;
+					// two-way stops and lights get their own markings when they're built
+				}
+			}
+		}
+	}
+
+	// directions from an intersection's center toward each road that meets it
+	private List<Godot.Vector2> GetApproachDirections(Vector2I cell)
+	{
+		var directions = new List<Godot.Vector2>();
+		foreach (RoadSegment segment in _roadNetwork.Segments)
+		{
+			if (segment.Path.Count < 2) continue;
+			if (segment.A == cell) directions.Add((Godot.Vector2)(segment.Path[1] - segment.Path[0]));
+			if (segment.B == cell) directions.Add((Godot.Vector2)(segment.Path[^2] - segment.Path[^1]));
+		}
+		return directions;
+	}
+
+	// white stop line across the incoming lane and a small red octagon at the road's edge
+	// cars drive on the right, so the incoming lane is on the right side of a car heading in
+	private void DrawStopMarking(Vector2I cell, Godot.Vector2 approach, float roadWidth)
+	{
+		Godot.Vector2 center = CellToLocalCenter(cell);
+		Godot.Vector2 incomingSide = new Godot.Vector2(approach.Y, -approach.X);
+		Godot.Vector2 lineStart = center + approach * (roadWidth * 0.5f + 2.0f);
+
+		DrawLine(lineStart, lineStart + incomingSide * (roadWidth * 0.5f), StopLineColor,
+			Mathf.Max(2.0f, roadWidth * 0.1f), true);
+
+		Godot.Vector2 signCenter = lineStart + incomingSide * (roadWidth * 0.5f + StopSignRadius + 2.0f);
+		var octagon = new Godot.Vector2[8];
+		for (int i = 0; i < 8; i++)
+		{
+			float angle = Mathf.Pi / 8.0f + i * Mathf.Pi / 4.0f; // flat top like a real stop sign
+			octagon[i] = signCenter + new Godot.Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * StopSignRadius;
+		}
+		DrawColoredPolygon(octagon, StopSignColor);
+		DrawPolyline(new List<Godot.Vector2>(octagon) { octagon[0] }.ToArray(), Colors.White, 1.0f, true);
 	}
 
 	private void DrawCommittedRoads(float roadWidth)

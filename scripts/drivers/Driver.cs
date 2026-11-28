@@ -152,6 +152,78 @@ public partial class Driver : Node2D
         _otherDrivers = drivers;
     }
 
+    //signaled intersections in this run
+    private IReadOnlyCollection<JunctionController> _junctions;
+    //the signaled junction the driver is driving through, and the one it's waiting at
+    private JunctionController _insideJunction;
+    private JunctionController _waitingAt;
+
+    //near a signaled junction, the signal decides who goes instead of the driver-id rule
+    internal bool NearControlledJunction { get; private set; }
+
+    public void SetJunctionControllers(IReadOnlyCollection<JunctionController> junctions)
+    {
+        _junctions = junctions;
+    }
+
+    //true when the driver has to wait at a stop line this frame
+    private bool HeldAtJunction(Vector2 direction, double delta)
+    {
+        NearControlledJunction = false;
+        if (_junctions == null || _junctions.Count == 0) return false;
+
+        //driving through a junction: release it once past it and heading away
+        if (_insideJunction != null)
+        {
+            Vector2 fromCenter = GlobalPosition - _insideJunction.Center;
+            if (fromCenter.Length() > _insideJunction.StopDistance && fromCenter.Dot(direction) > 0)
+            {
+                _insideJunction.Exit(this);
+                _insideJunction = null;
+            }
+            else
+            {
+                NearControlledJunction = true;
+                return false;
+            }
+        }
+
+        foreach (JunctionController junction in _junctions)
+        {
+            Vector2 toCenter = junction.Center - GlobalPosition;
+            float distance = toCenter.Length();
+            if (distance > junction.StopDistance * 1.5f) continue;
+
+            NearControlledJunction = true;
+
+            //only stop for a junction ahead, once at its stop line
+            if (distance > junction.StopDistance || toCenter.Dot(direction) <= 0) continue;
+
+            if (junction.RequestEntry(this, delta))
+            {
+                _insideJunction = junction;
+                _waitingAt = null;
+                return false;
+            }
+
+            _waitingAt = junction;
+            return true;
+        }
+
+        _waitingAt = null;
+        return false;
+    }
+
+    //lets go of any junction when the driver leaves the road
+    private void LeaveJunctionControl()
+    {
+        _insideJunction?.Forget(this);
+        _waitingAt?.Forget(this);
+        _insideJunction = null;
+        _waitingAt = null;
+        NearControlledJunction = false;
+    }
+
     private float GetMovementSpeed(Vector2 direction)
     {
         float movementSpeed = Speed;
@@ -170,6 +242,12 @@ public partial class Driver : Node2D
                 continue;
             }
 
+            //cars waiting at the junction this driver is crossing never block it
+            if (_insideJunction != null && other._waitingAt == _insideJunction)
+            {
+                continue;
+            }
+
             Vector2 difference = other.GlobalPosition - GlobalPosition;
 
             float distance = difference.Length();
@@ -182,8 +260,9 @@ public partial class Driver : Node2D
 
             bool directionCross = directionDot < 0.866f;
 
-            //handle cars in deadlock crossing
-            if (other.IsMoving && directionCross && distance < IntersectionConflictDistance)
+            //handle cars in deadlock crossing (signaled junctions handle this themselves)
+            if (other.IsMoving && directionCross && distance < IntersectionConflictDistance &&
+                !NearControlledJunction && !other.NearControlledJunction)
             {
                 //lower driver id gets temp priority
                 if (DriverId < other.DriverId)
@@ -408,8 +487,9 @@ public partial class Driver : Node2D
 
         Speed = GetSpeedForLimit(_waypointSpeedLimits[speedIndex]);
 
-        // check for other cars
-        float movementSpeed = GetMovementSpeed(direction.Normalized());
+        // stop at signals, then check for other cars
+        bool held = HeldAtJunction(direction.Normalized(), delta);
+        float movementSpeed = held ? 0.0f : GetMovementSpeed(direction.Normalized());
         if (reversing) movementSpeed *= 0.5f;
 
         // move to next point with adjusted speed
@@ -437,6 +517,7 @@ public partial class Driver : Node2D
     
     private void CompleteRoute()
     {
+        LeaveJunctionControl();
         IsMoving = false;
         Arrived?.Invoke(this);
     }

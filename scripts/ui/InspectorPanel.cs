@@ -35,6 +35,12 @@ public partial class InspectorPanel : Control
 	public event Action<SignalType> SignalTypeChanged;
 	public SignalType ChosenSignal => (SignalType)_signalOption.GetSelectedId();
 
+	// signal given to templates placed with the junction tool
+	public event Action<SignalType> PlacementSignalChanged;
+	public SignalType PlacementSignal { get; private set; } = SignalType.None;
+	// true while the dropdown edits a picked intersection instead of the placement signal
+	private bool _editingJunction;
+
 	// roads values and buttons
 	private Label _laneValue;
 	private Label _speedValue;
@@ -190,7 +196,17 @@ public partial class InspectorPanel : Control
         _templateOption.ItemSelected += _ => JunctionTemplateChanged?.Invoke(ChosenTemplate);
         _signalOption.ItemSelected += _ =>
         {
-            if (!_updatingControls) SignalTypeChanged?.Invoke(ChosenSignal);
+            if (_updatingControls) return;
+
+            if (_editingJunction)
+            {
+                SignalTypeChanged?.Invoke(ChosenSignal);
+            }
+            else
+            {
+                PlacementSignal = ChosenSignal;
+                PlacementSignalChanged?.Invoke(PlacementSignal);
+            }
         };
         _widthInput.ValueChanged += _ => OnDraftChanged();
         _heightInput.ValueChanged += _ => OnDraftChanged();
@@ -234,6 +250,7 @@ public partial class InspectorPanel : Control
     public void ShowForTool(ToolType tool)
     {
         _selectedStructure = null;
+        _editingJunction = false;
         ShowFieldsForTool(tool);
 
         if (tool == ToolType.Structure)
@@ -248,7 +265,12 @@ public partial class InspectorPanel : Control
         {
             _titleLabel.Text = "Junction Tool";
             _typeLabel.Text = "Click to place | Press R to rotate";
-            _subtitleLabel.Text = "Click an intersection to set its signal";
+            _subtitleLabel.Text = "New junctions get the signal below";
+
+            // the dropdown shows the placement signal until an intersection is picked
+            _updatingControls = true;
+            _signalOption.Select(_signalOption.GetItemIndex((int)PlacementSignal));
+            _updatingControls = false;
         }
         else
         {
@@ -266,8 +288,8 @@ public partial class InspectorPanel : Control
 	{
 		_selectedStructure = null;
 		ShowFieldsForTool(ToolType.Junction);
-		_signalField.Visible = true;
 		_templateField.Visible = false; // editing a signal, not placing a template
+		_editingJunction = true;
 
 		_updatingControls = true;
 		_signalOption.Select(_signalOption.GetItemIndex((int)signal.Type));
@@ -300,10 +322,10 @@ public partial class InspectorPanel : Control
 		bool roadSelected = tool == ToolType.Road;
 		bool junctionSelected = tool == ToolType.Junction;
 		bool buildingSelected = tool == ToolType.Structure;
-
+       
+        _signalField.Visible = junctionSelected;
 		_lanesField.Visible = roadSelected;
 		_speedField.Visible = roadSelected;
-		_signalField.Visible = false; 
 		_templateField.Visible = junctionSelected;
 		_buildingFields.Visible = buildingSelected;
 		_typeIcon.Visible = !buildingSelected;

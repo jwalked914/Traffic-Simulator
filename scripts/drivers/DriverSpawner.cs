@@ -41,6 +41,9 @@ public partial class DriverSpawner : Node2D
 
 	private readonly Dictionary<Driver, ResidentTrip> _residents = new();
 
+	// signal controllers for this run, rebuilt every time the sim starts
+	private readonly Dictionary<Vector2I, JunctionController> _junctionControllers = new();
+
 	private sealed class SpawnPlan
 	{
 		public Structure Source;
@@ -123,6 +126,7 @@ public partial class DriverSpawner : Node2D
 			return false;
 		}
 
+		CreateJunctionControllers();
 		SpawnedCount = 0;
 		ConsumedCount = 0;
 		ReturnedCount = 0;
@@ -139,6 +143,7 @@ public partial class DriverSpawner : Node2D
 	{
 		if (!IsRunning) return;
 		ElapsedSeconds = Math.Min(_duration, ElapsedSeconds + delta);
+		foreach (JunctionController junction in _junctionControllers.Values) junction.Update(delta);
 		UpdateResidents();
 		ReserveParkingForArrivals(waiting: true);
 		ReserveParkingForArrivals(waiting: false);
@@ -212,8 +217,9 @@ public partial class DriverSpawner : Node2D
 			_residents.Add(driver, new ResidentTrip { Home = plan.Source, Trip = trip, LotEntranceWaypoint = lotEntranceWaypoint });
 		}
 		driver.Arrived += OnDriverArrived;
-		//give driver access to other cars
+		//give driver access to other cars and the signals it must obey
 		driver.SetOtherDrivers(_drivers);
+		driver.SetJunctionControllers(_junctionControllers.Values);
 		_drivers.Add(driver);
 		AddChild(driver);
 		driver.SetWaypoints(points, speedLimits);
@@ -504,6 +510,7 @@ public partial class DriverSpawner : Node2D
 		_drivers.Clear();
 		_residents.Clear();
 		_plans.Clear();
+		_junctionControllers.Clear();
 		ClearParking();
 		SpawnedCount = 0;
 		ConsumedCount = 0;
@@ -511,6 +518,19 @@ public partial class DriverSpawner : Node2D
 		ElapsedSeconds = 0;
 		IsRunning = false;
 		StateChanged?.Invoke();
+	}
+
+	// one controller per signaled intersection; cars stop this far from the center
+	private void CreateJunctionControllers()
+	{
+		_junctionControllers.Clear();
+		float stopDistance = _roads.RoadWidth * 0.5f + CarVisual.HalfLength + 4.0f;
+
+		foreach ((Vector2I cell, SignalSettings signal) in _roads.GetActiveSignals())
+		{
+			JunctionController junction = JunctionController.Create(cell, _roads.CellToGlobalCenter(cell), stopDistance, signal);
+			if (junction != null) _junctionControllers[cell] = junction;
+		}
 	}
 
 	private void ClearParking()

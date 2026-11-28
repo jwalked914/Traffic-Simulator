@@ -1,0 +1,10 @@
+diff a/scripts/ui/InspectorPanel.cs b/scripts/ui/InspectorPanel.cs	(rejected hunks)
+@@ -303,7 +325,7 @@ public partial class InspectorPanel : Control
+ 
+ 		_lanesField.Visible = roadSelected;
+ 		_speedField.Visible = roadSelected;
+-		_signalField.Visible = false; // only shown once an intersection is picked (ShowJunction)
++		_signalField.Visible = junctionSelected;
+ 		_templateField.Visible = junctionSelected;
+ 		_buildingFields.Visible = buildingSelected;
+ 		_typeIcon.Visible = !buildingSelected;
