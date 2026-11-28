@@ -11,3 +11,7 @@
 # .NET build output
 bin/
 obj/
+
+# leftovers from applying patches
+*.rej
+*.patch

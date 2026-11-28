@@ -180,7 +180,7 @@ public partial class UIRoot : CanvasLayer
 		if (cell is Vector2I picked)
 		{
 			_structures.Select(null); // one thing selected at a time
-			_inspector.ShowJunction(picked, _roads.GetSignal(picked));
+			_inspector.ShowJunction(picked, _roads.GetSignal(picked), _roads.GetConnectionCount(picked));
 		}
 		else _inspector.ShowForTool(CurrentTool);
 	}

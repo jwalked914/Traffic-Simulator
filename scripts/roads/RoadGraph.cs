@@ -124,6 +124,9 @@ public partial class RoadGraph : Node2D
 	// signal access for the ui; the road network does the validation
 	public SignalSettings GetSignal(Vector2I cell) => _roadNetwork?.GetSignal(cell) ?? default;
 
+	// how many roads meet at a cell (3 = T, 4 = four-way)
+	public int GetConnectionCount(Vector2I cell) => _roadNetwork?.GetConnectionCount(cell) ?? 0;
+
 	// every intersection that currently has a signal (skips old entries on cells that are no longer intersections)
 	public IEnumerable<(Vector2I Cell, SignalSettings Signal)> GetActiveSignals()
 	{
@@ -856,8 +859,9 @@ public partial class RoadGraph : Node2D
 		Godot.Vector2 incomingSide = new Godot.Vector2(approach.Y, -approach.X);
 		Godot.Vector2 lineStart = center + approach * (roadWidth * 0.5f + 2.0f);
 
+		// a bit thicker than the dashed center line, scaled with the road
 		DrawLine(lineStart, lineStart + incomingSide * (roadWidth * 0.5f), StopLineColor,
-			Mathf.Max(2.0f, roadWidth * 0.1f), true);
+			Mathf.Max(1.5f, roadWidth * 0.06f), true);
 
 		Godot.Vector2 signCenter = lineStart + incomingSide * (roadWidth * 0.5f + StopSignRadius + 2.0f);
 		var octagon = new Godot.Vector2[8];

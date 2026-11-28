@@ -294,10 +294,11 @@ public partial class InspectorPanel : Control
     }
 
 	// shows the signal settings of the intersection picked with the junction tool
-	public void ShowJunction(Vector2I cell, SignalSettings signal)
+	public void ShowJunction(Vector2I cell, SignalSettings signal, int roadCount)
 	{
 		_selectedStructure = null;
 		ShowFieldsForTool(ToolType.Junction);
+		_typeIcon.Texture = TemplateIcon(roadCount >= 4 ? JunctionTemplateType.FourWay : JunctionTemplateType.T);
 		_templateField.Visible = false;
 		_editingJunction = true;
 
@@ -332,8 +333,8 @@ public partial class InspectorPanel : Control
 		bool roadSelected = tool == ToolType.Road;
 		bool junctionSelected = tool == ToolType.Junction;
 		bool buildingSelected = tool == ToolType.Structure;
-       
-        _signalField.Visible = junctionSelected;
+
+		_signalField.Visible = junctionSelected;
 		_lanesField.Visible = roadSelected;
 		_speedField.Visible = roadSelected;
 		_templateField.Visible = junctionSelected;

@@ -130,8 +130,7 @@ theme_override_styles/pressed = ExtResource("4_qwj7x")
 theme_override_styles/hover = SubResource("StyleBoxFlat_jlrf6")
 toggle_mode = true
 button_group = ExtResource("3_b7b3u")
-text = "JUNCTIONS
-"
+text = "JUNCTIONS"
 icon = ExtResource("8_vvmlt")
 icon_alignment = 1
 vertical_icon_alignment = 0
